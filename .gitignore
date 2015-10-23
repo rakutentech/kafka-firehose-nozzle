@@ -1,0 +1,7 @@
+*.test
+Procfile
+TODO.md
+bin/
+config/
+Godeps/
+scripts/
