@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"path/filepath"
 
 	"github.com/BurntSushi/toml"
 )
@@ -22,7 +21,7 @@ type CF struct {
 	// It must start with `ws://` or `wss://` schema because this is websocket.
 	DopplerAddr string `toml:"doppler_address"`
 
-	// uAAAddr is UAA server address.
+	// UAAAddr is UAA server address.
 	UAAAddr string `toml:"uaa_address"`
 
 	// Username is the username which can has scope of `doppler.firehose`.
@@ -38,8 +37,9 @@ type Kafka struct {
 
 // LoadConfig reads configuration file
 func LoadConfig(path string) (*Config, error) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, fmt.Errorf("no such file: %s", path)
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
 	}
 
 	config := new(Config)
