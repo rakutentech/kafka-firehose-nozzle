@@ -1,67 +1,63 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
+	"os"
+	"sync"
 
-	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
+	"golang.org/x/net/context"
 )
 
-const (
-	// TopicAppLogTmpl is Kafka topic name template for LogMessage
-	TopicAppLogTmpl = "app-log-%s"
+type NozzleProducer interface {
+	// Produce produces firehose events
+	Produce(context.Context, <-chan *events.Envelope)
 
-	// TopicAppMetrics is Kafka topic name for ContainerMetric
-	TopicContainerMetrics = "app-metric-%s"
+	// Errors returns error channel
+	Errors() <-chan error
 
-	// TopicCFMetrics is Kafka topic name for ValueMetric
-	TopicCFMetric = "cf-metrics"
-)
-
-// KafkaProducer implements the Nozzle.Producer interface.
-type KafkaProducer struct {
-	sarama.AsyncProducer
-
-	// doneCh is used to stop producer process
-	DoneCh chan struct{}
+	// Close shuts down the producer and flushes any messages it may have buffered.
+	Close() error
 }
 
-func (kp *KafkaProducer) produce(eventCh <-chan *events.Envelope) {
+// LogProducer implements NozzleProducer interfaces.
+// This producer is mainly used for debugging reason.
+type LogProducer struct {
+	Logger *log.Logger
+
+	once sync.Once
+}
+
+var defaultLogger = log.New(os.Stdout, "", log.LstdFlags)
+
+// init sets default logger
+func (p *LogProducer) init() {
+	if p.Logger == nil {
+		p.Logger = defaultLogger
+	}
+}
+
+func (p *LogProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
+	p.once.Do(p.init)
 	for {
 		select {
 		case event := <-eventCh:
-			kp.input(event)
-		case <-kp.DoneCh:
+			buf, _ := json.Marshal(event)
+			p.Logger.Printf("[INFO] %s", string(buf))
+		case <-ctx.Done():
 			// Stop process immediately
 			return
 		}
 	}
 }
 
-func (kp *KafkaProducer) input(event *events.Envelope) {
-	switch eventType := event.GetEventType(); eventType {
-	case events.Envelope_HttpStart:
-		// Do nothing
-	case events.Envelope_HttpStartStop:
-		// Do nothing
-	case events.Envelope_HttpStop:
-		// Do nothing
-	case events.Envelope_LogMessage:
-		appID := event.GetLogMessage().GetAppId()
-		kp.Input() <- &sarama.ProducerMessage{
-			Topic: fmt.Sprintf(TopicAppLogTmpl, appID),
-			Value: &JsonEncoder{event: event},
-		}
-	case events.Envelope_ValueMetric:
-		kp.Input() <- &sarama.ProducerMessage{
-			Topic: TopicCFMetric,
-			Value: &JsonEncoder{event: event},
-		}
-	case events.Envelope_CounterEvent:
-		// Do nothing
-	case events.Envelope_Error:
-		// Do nothing
-	case events.Envelope_ContainerMetric:
-		// Do nothing
-	}
+func (p *LogProducer) Errors() <-chan error {
+	errCh := make(chan error, 1)
+	return errCh
+}
+
+func (p *LogProducer) Close() error {
+	// Nothing to close for thi producer
+	return nil
 }
