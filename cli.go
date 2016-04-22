@@ -20,7 +20,7 @@ import (
 
 const (
 	// DefaultCfgPath is default config file path
-	DefaultCfgPath = "./config/kafka-firehose-nozzle.toml"
+	DefaultCfgPath = "kafka-firehose-nozzle.toml"
 
 	// DefaultUAATimeout is default timeout for requesting
 	// auth token to UAA server.
@@ -28,7 +28,7 @@ const (
 
 	// DefaultSubscriptionID is default subscription ID for
 	// loggregagor firehose
-	DefaultSubscriptionID = "kafka-firehose-nozzle"
+	DefaultSubscriptionID = "debug-kafka-firehose-nozzle"
 )
 
 // Exit codes are int values that represent an exit code for a particular error.
@@ -52,8 +52,7 @@ func (cli *CLI) Run(args []string) int {
 		logLevel       string
 		worker         int
 		varz           bool
-		consoleWriter  bool
-		insecure       bool
+		debug          bool
 		version        bool
 	)
 
@@ -69,8 +68,7 @@ func (cli *CLI) Run(args []string) int {
 	flags.StringVar(&logLevel, "log-level", "INFO", "")
 	flags.IntVar(&worker, "worker", runtime.NumCPU(), "")
 	flags.BoolVar(&varz, "varz-server", false, "")
-	flags.BoolVar(&consoleWriter, "console-writer", false, "")
-	flags.BoolVar(&insecure, "insecure", false, "")
+	flags.BoolVar(&debug, "debug", false, "")
 	flags.BoolVar(&version, "version", false, "")
 
 	// Parse commandline flag
@@ -90,7 +88,9 @@ func (cli *CLI) Run(args []string) int {
 		MinLevel: (logutils.LogLevel)(strings.ToUpper(logLevel)),
 		Writer:   cli.outStream,
 	}, "", log.LstdFlags)
+
 	logger.Printf("[INFO] LogLevel: %s", logLevel)
+	logger.Printf("[INFO] Subscription ID: %s", subscriptionID)
 
 	// Load configuration
 	config, err := LoadConfig(cfgPath)
@@ -123,14 +123,18 @@ func (cli *CLI) Run(args []string) int {
 		return ExitCodeError
 	}
 
-	// producer, err := NewKafkaProducer(config)
-	// if err != nil {
-	// 	logger.Printf("[ERROR] Failed to construct kafka producer: %s", err)
-	// 	return ExitCodeError
-	// }
-
-	producer := &LogProducer{
-		Logger: logger,
+	var producer NozzleProducer
+	if debug {
+		logger.Printf("[INFO] Use LogProducer")
+		producer = NewLogProducer(logger)
+	} else {
+		logger.Printf("[INFO] Use KafkaProducer")
+		var err error
+		producer, err = NewKafkaProducer(config)
+		if err != nil {
+			logger.Printf("[ERROR] Failed to construct kafka producer: %s", err)
+			return ExitCodeError
+		}
 	}
 
 	// Create a ctx for cancelation signal across the goroutined producers.
@@ -230,10 +234,9 @@ Usage
 
 Avairalbe options
 
-    -config PATH       Path to configuraiton file.
-    -worker NUM        Number of producer worker. Default is number of CPU core.
-    -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'.
-    -console-writer    Output log to stdout instead of producing message to kafka (This is for debug).
-    -insecure          Enable insecure connection.
-    -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR).
+    -config PATH       Path to configuraiton file
+    -worker NUM        Number of producer worker. Default is number of CPU core
+    -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
+    -debug             Output event to stdout instead of producing message to kafka
+    -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR)
 `

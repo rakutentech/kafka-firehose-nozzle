@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
 	"golang.org/x/net/context"
 )
@@ -15,7 +16,7 @@ type NozzleProducer interface {
 	Produce(context.Context, <-chan *events.Envelope)
 
 	// Errors returns error channel
-	Errors() <-chan error
+	Errors() <-chan *sarama.ProducerError
 
 	// Close shuts down the producer and flushes any messages it may have buffered.
 	Close() error
@@ -58,8 +59,8 @@ func (p *LogProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelo
 	}
 }
 
-func (p *LogProducer) Errors() <-chan error {
-	errCh := make(chan error, 1)
+func (p *LogProducer) Errors() <-chan *sarama.ProducerError {
+	errCh := make(chan *sarama.ProducerError, 1)
 	return errCh
 }
 
