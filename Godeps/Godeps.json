@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/rakutentech/kafka-firehose-nozzle",
 	"GoVersion": "go1.6",
+	"GodepVersion": "v62",
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
@@ -86,6 +87,10 @@
 		{
 			"ImportPath": "github.com/rakutentech/go-nozzle",
 			"Rev": "152e9e543ce133cda75999f7c717abd012381676"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
 		}
 	]
 }
