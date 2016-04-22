@@ -1,5 +1,5 @@
 *.test
-Procfile
-TODO.md
 bin/
-config/
+Procfile
+kafka-firehose-nozzle.toml
+manifest.yml
