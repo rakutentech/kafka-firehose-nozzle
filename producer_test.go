@@ -5,10 +5,10 @@ import (
 	"log"
 	"strings"
 	"testing"
-
-	"golang.org/x/net/context"
+	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
+	"golang.org/x/net/context"
 )
 
 func TestLogProducer_implement(t *testing.T) {
@@ -32,7 +32,8 @@ func TestLogProducer_Produce(t *testing.T) {
 	}()
 
 	// Create test event and send it to channel
-	eventCh <- testEvent("")
+	timestamp := time.Now().UnixNano()
+	eventCh <- testEvent("", timestamp)
 
 	// Stop producing
 	cancel()

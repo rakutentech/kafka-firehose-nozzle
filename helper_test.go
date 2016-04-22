@@ -1,14 +1,11 @@
 package main
 
 import (
-	"time"
-
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 )
 
-func testEvent(message string) *events.Envelope {
-	timestamp := time.Now().UnixNano()
+func testEvent(message string, timestamp int64) *events.Envelope {
 	logMessage := &events.LogMessage{
 		Message:     []byte(message),
 		MessageType: events.LogMessage_OUT.Enum(),
