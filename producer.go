@@ -21,6 +21,8 @@ type NozzleProducer interface {
 	Close() error
 }
 
+var defaultLogger = log.New(os.Stdout, "", log.LstdFlags)
+
 // LogProducer implements NozzleProducer interfaces.
 // This producer is mainly used for debugging reason.
 type LogProducer struct {
@@ -29,7 +31,11 @@ type LogProducer struct {
 	once sync.Once
 }
 
-var defaultLogger = log.New(os.Stdout, "", log.LstdFlags)
+func NewLogProducer(logger *log.Logger) NozzleProducer {
+	return &LogProducer{
+		Logger: logger,
+	}
+}
 
 // init sets default logger
 func (p *LogProducer) init() {
@@ -46,7 +52,7 @@ func (p *LogProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelo
 			buf, _ := json.Marshal(event)
 			p.Logger.Printf("[INFO] %s", string(buf))
 		case <-ctx.Done():
-			// Stop process immediately
+			p.Logger.Printf("[INFO] Stop producer")
 			return
 		}
 	}
