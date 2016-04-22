@@ -14,6 +14,9 @@ build: deps
 test: 
 	godep go test -v -parallel 5
 
+bench:
+	godep go test -bench .
+
 test-race:
 	godep go test -v -race -parallel 5
 
