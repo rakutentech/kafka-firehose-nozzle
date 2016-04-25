@@ -18,6 +18,9 @@ type NozzleProducer interface {
 	// Errors returns error channel
 	Errors() <-chan *sarama.ProducerError
 
+	// Success returns sarama.ProducerMessage
+	Successes() <-chan *sarama.ProducerMessage
+
 	// Close shuts down the producer and flushes any messages it may have buffered.
 	Close() error
 }
@@ -62,6 +65,11 @@ func (p *LogProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelo
 func (p *LogProducer) Errors() <-chan *sarama.ProducerError {
 	errCh := make(chan *sarama.ProducerError, 1)
 	return errCh
+}
+
+func (p *LogProducer) Successes() <-chan *sarama.ProducerMessage {
+	msgCh := make(chan *sarama.ProducerMessage)
+	return msgCh
 }
 
 func (p *LogProducer) Close() error {
