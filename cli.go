@@ -12,10 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/hashicorp/logutils"
 	"github.com/rakutentech/go-nozzle"
+	"golang.org/x/net/context"
 )
 
 const (
