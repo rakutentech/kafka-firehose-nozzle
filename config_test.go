@@ -2,26 +2,44 @@ package main
 
 import (
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestLoadConfig(t *testing.T) {
 	cases := []struct {
-		in                  string
-		success             bool
-		dopplerAddr, errStr string
+		in      string
+		success bool
+		errStr  string
+		config  *Config
 	}{
 		{
-			in:          "basic.toml",
-			success:     true,
-			dopplerAddr: "wss://doppler.cloudfoundry.net",
+			in:      "basic.toml",
+			success: true,
+			config: &Config{
+				CF: &CF{
+					DopplerAddr: "wss://doppler.cloudfoundry.net",
+					UAAAddr:     "https://uaa.cloudfoundry.net",
+					Username:    "tcnksm",
+					Password:    "xyz",
+				},
+				Kafka: &Kafka{
+					Brokers: []string{"192.168.1.1:9092", "192.168.1.2:9092", "192.168.1.3:9092"},
+					Topic: &Topic{
+						LogMessage:     "log",
+						LogMessageTmpl: "log-%s",
+						ValueMetric:    "metric",
+					},
+				},
+			},
 		},
 
 		{
 			in:      "not-exist.toml",
 			success: false,
 			errStr:  "no such file",
+			config:  &Config{},
 		},
 	}
 
@@ -33,11 +51,9 @@ func TestLoadConfig(t *testing.T) {
 				t.Fatalf("#%d expect %q to be nil", i, err)
 			}
 
-			// ok
-			if config.CF.DopplerAddr != tc.dopplerAddr {
-				t.Fatalf("#%d expect %q to be %q", i, config.CF.DopplerAddr, tc.dopplerAddr)
+			if !reflect.DeepEqual(*config, *tc.config) {
+				t.Fatalf("#%d expect to %#v to be eq %#v", i, *config.Kafka, *tc.config.Kafka)
 			}
-
 			continue
 		}
 
@@ -46,8 +62,9 @@ func TestLoadConfig(t *testing.T) {
 		}
 
 		if !strings.Contains(err.Error(), tc.errStr) {
-			t.Fatalf("#%d expect %q to contain %q", i, err.Error(), tc.errStr)
+			t.Fatalf("#%d expect %s to contain %s", i, err.Error(), tc.errStr)
 		}
+
 	}
 
 }

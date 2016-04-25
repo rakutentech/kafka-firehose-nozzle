@@ -33,6 +33,13 @@ type CF struct {
 // Kafka holds Kafka related configuration
 type Kafka struct {
 	Brokers []string `toml:"brokers"`
+	Topic   *Topic   `toml:"topic"`
+}
+
+type Topic struct {
+	LogMessage     string `toml:"log_message"`
+	LogMessageTmpl string `toml:"log_message_tmpl"`
+	ValueMetric    string `toml:"value_metric"`
 }
 
 // LoadConfig reads configuration file
