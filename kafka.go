@@ -64,6 +64,8 @@ func (kp *KafkaProducer) init() {
 // Produce produces event to kafka
 func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
 	kp.once.Do(kp.init)
+
+	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
 		case event := <-eventCh:
