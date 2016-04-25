@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
-	"os"
 	"sync"
 
 	"github.com/Shopify/sarama"
@@ -25,7 +25,7 @@ type NozzleProducer interface {
 	Close() error
 }
 
-var defaultLogger = log.New(os.Stdout, "", log.LstdFlags)
+var defaultLogger = log.New(ioutil.Discard, "", log.LstdFlags)
 
 // LogProducer implements NozzleProducer interfaces.
 // This producer is mainly used for debugging reason.
