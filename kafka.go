@@ -15,11 +15,14 @@ const (
 	// TopicAppLogTmpl is Kafka topic name template for LogMessage
 	TopicAppLogTmpl = "app-log-%s"
 
-	// TopicAppMetrics is Kafka topic name for ContainerMetric
-	TopicContainerMetrics = "app-metric-%s"
-
 	// TopicCFMetrics is Kafka topic name for ValueMetric
 	TopicCFMetric = "cf-metrics"
+)
+
+const (
+	// Default topic name for each event
+	DefaultValueMetricTopic = "value-metric"
+	DefaultLogMessageTopic  = "log-message"
 )
 
 func NewKafkaProducer(config *Config) (NozzleProducer, error) {
@@ -40,14 +43,32 @@ func NewKafkaProducer(config *Config) (NozzleProducer, error) {
 		return nil, err
 	}
 
+	kafkaTopic := config.Kafka.Topic
+	if kafkaTopic.LogMessage == "" {
+		kafkaTopic.LogMessage = DefaultLogMessageTopic
+	}
+
+	if kafkaTopic.ValueMetric == "" {
+		kafkaTopic.ValueMetric = DefaultValueMetricTopic
+	}
+
 	return &KafkaProducer{
 		AsyncProducer: asyncProducer,
+
+		logMessageTopic:    kafkaTopic.LogMessage,
+		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
+		valueMetricTopic:   kafkaTopic.ValueMetric,
 	}, nil
 }
 
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	logMessageTopic    string
+	logMessageTopicFmt string
+
+	valueMetricTopic string
 
 	Logger *log.Logger
 
@@ -59,6 +80,18 @@ func (kp *KafkaProducer) init() {
 	if kp.Logger == nil {
 		kp.Logger = defaultLogger
 	}
+}
+
+func (kp *KafkaProducer) LogMessageTopic(appID string) string {
+	if kp.logMessageTopicFmt != "" {
+		return fmt.Sprintf(kp.logMessageTopicFmt, appID)
+	}
+
+	return kp.logMessageTopic
+}
+
+func (kp *KafkaProducer) ValueMetricTopic() string {
+	return kp.valueMetricTopic
 }
 
 // Produce produces event to kafka
@@ -89,12 +122,12 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	case events.Envelope_LogMessage:
 		appID := event.GetLogMessage().GetAppId()
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: fmt.Sprintf(TopicAppLogTmpl, appID),
+			Topic: kp.LogMessageTopic(appID),
 			Value: &JsonEncoder{event: event},
 		}
 	case events.Envelope_ValueMetric:
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: TopicCFMetric,
+			Topic: kp.ValueMetricTopic(),
 			Value: &JsonEncoder{event: event},
 		}
 	case events.Envelope_CounterEvent:

@@ -13,17 +13,61 @@ import (
 func TestNewKafkaProducer(t *testing.T) {
 
 	cases := []struct {
-		topic string
-		event *events.Envelope
+		config *Config
+		topic  string
+		event  *events.Envelope
 	}{
+
+		// use default topic
 		{
-			topic: fmt.Sprintf("app-log-%s", testAppId),
+			config: &Config{},
+			topic:  DefaultLogMessageTopic,
+			event:  logMessage("", testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{},
+			topic:  DefaultValueMetricTopic,
+			event:  valueMetric(time.Now().UnixNano()),
+		},
+
+		// use fixed topic name
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "log",
+					},
+				},
+			},
+			topic: "log",
 			event: logMessage("", testAppId, time.Now().UnixNano()),
 		},
 
 		{
-			topic: "cf-metrics",
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						ValueMetric: "metric",
+					},
+				},
+			},
+
+			topic: "metric",
 			event: valueMetric(time.Now().UnixNano()),
+		},
+
+		// use log-message topic format
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessageFmt: "log-%s",
+					},
+				},
+			},
+			topic: fmt.Sprintf("log-%s", testAppId),
+			event: logMessage("", testAppId, time.Now().UnixNano()),
 		},
 	}
 
@@ -40,14 +84,10 @@ func TestNewKafkaProducer(t *testing.T) {
 		seed := sarama.NewMockBroker(t, int32(0))
 		seed.Returns(meta)
 
-		config := &Config{
-			Kafka: &Kafka{
-				Brokers: []string{seed.Addr()},
-			},
-		}
+		tc.config.Kafka.Brokers = []string{seed.Addr()}
 
 		// Create new kafka producer
-		producer, err := NewKafkaProducer(config)
+		producer, err := NewKafkaProducer(tc.config)
 		if err != nil {
 			t.Fatalf("err: %s", err)
 		}
