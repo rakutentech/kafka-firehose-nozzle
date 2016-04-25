@@ -33,7 +33,7 @@ func TestLogProducer_Produce(t *testing.T) {
 
 	// Create test event and send it to channel
 	timestamp := time.Now().UnixNano()
-	eventCh <- testEvent("", timestamp)
+	eventCh <- logMessage("", testAppId, timestamp)
 
 	// Stop producing
 	cancel()

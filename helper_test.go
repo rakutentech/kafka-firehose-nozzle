@@ -5,11 +5,16 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-func testEvent(message string, timestamp int64) *events.Envelope {
+const (
+	// testAppId is GUID for test application
+	testAppId = "3356a5c7-e86c-442a-b14f-ce5cc4f80ed1"
+)
+
+func logMessage(message, appId string, timestamp int64) *events.Envelope {
 	logMessage := &events.LogMessage{
 		Message:     []byte(message),
 		MessageType: events.LogMessage_OUT.Enum(),
-		AppId:       proto.String("3356a5c7-e86c-442a-b14f-ce5cc4f80ed1"),
+		AppId:       proto.String(testAppId),
 		SourceType:  proto.String("DEA"),
 		Timestamp:   proto.Int64(timestamp),
 	}
@@ -19,5 +24,18 @@ func testEvent(message string, timestamp int64) *events.Envelope {
 		EventType:  events.Envelope_LogMessage.Enum(),
 		Origin:     proto.String("fake-origin-1"),
 		Timestamp:  proto.Int64(timestamp),
+	}
+}
+
+func valueMetric(timestamp int64) *events.Envelope {
+	valueMetric := &events.ValueMetric{
+		Name:  proto.String("df"),
+		Value: proto.Float64(0.99),
+	}
+	return &events.Envelope{
+		ValueMetric: valueMetric,
+		EventType:   events.Envelope_ValueMetric.Enum(),
+		Origin:      proto.String("fake-origin-2"),
+		Timestamp:   proto.Int64(timestamp),
 	}
 }

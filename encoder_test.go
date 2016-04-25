@@ -1,14 +1,19 @@
 package main
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestJsonEncoder_Encode(t *testing.T) {
 	timestamp := int64(1461318380946558204)
-	expect := `{"origin":"fake-origin-1","eventType":5,"timestamp":1461318380946558204,"logMessage":{"message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"3356a5c7-e86c-442a-b14f-ce5cc4f80ed1","source_type":"DEA"}}`
+	expect := fmt.Sprintf(
+		`{"origin":"fake-origin-1","eventType":5,"timestamp":%d,"logMessage":{"message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%s","source_type":"DEA"}}`,
+		timestamp, testAppId)
 	expectLength := 225
 
 	encoder := &JsonEncoder{
-		event: testEvent("hello", timestamp),
+		event: logMessage("hello", testAppId, timestamp),
 	}
 
 	buf, err := encoder.Encode()
