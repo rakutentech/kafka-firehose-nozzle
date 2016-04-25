@@ -125,9 +125,11 @@ func (cli *CLI) Run(args []string) int {
 	var producer NozzleProducer
 	if debug {
 		logger.Printf("[INFO] Use LogProducer")
+
 		producer = NewLogProducer(logger)
 	} else {
 		logger.Printf("[INFO] Use KafkaProducer")
+
 		var err error
 		producer, err = NewKafkaProducer(config)
 		if err != nil {

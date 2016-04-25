@@ -14,9 +14,6 @@ type Config struct {
 
 // CF holds CloudFoundry related configuration.
 type CF struct {
-	// Domain is CloudFoundry domain. It does't require schema.
-	Domain string `toml:"domain"`
-
 	// dopplerAddr is doppler firehose address.
 	// It must start with `ws://` or `wss://` schema because this is websocket.
 	DopplerAddr string `toml:"doppler_address"`
