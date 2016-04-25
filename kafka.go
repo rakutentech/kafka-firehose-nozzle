@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"sync"
 
 	"golang.org/x/net/context"
 
@@ -25,6 +27,7 @@ func NewKafkaProducer(config *Config) (NozzleProducer, error) {
 	// TODO (tcnksm): Enable to configure more properties.
 	producerConfig := sarama.NewConfig()
 	producerConfig.Producer.Retry.Max = 5
+	producerConfig.Producer.Return.Successes = true
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
 
 	brokers := config.Kafka.Brokers
@@ -37,7 +40,6 @@ func NewKafkaProducer(config *Config) (NozzleProducer, error) {
 		return nil, err
 	}
 
-	//
 	return &KafkaProducer{
 		AsyncProducer: asyncProducer,
 	}, nil
@@ -46,16 +48,29 @@ func NewKafkaProducer(config *Config) (NozzleProducer, error) {
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	Logger *log.Logger
+
+	once sync.Once
+}
+
+// init sets default logger
+func (kp *KafkaProducer) init() {
+	if kp.Logger == nil {
+		kp.Logger = defaultLogger
+	}
 }
 
 // Produce produces event to kafka
 func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
+	kp.once.Do(kp.init)
 	for {
 		select {
 		case event := <-eventCh:
 			kp.input(event)
 		case <-ctx.Done():
 			// Stop process immediately
+			kp.Logger.Printf("[INFO] Stop kafka producer")
 			return
 		}
 	}
