@@ -9,5 +9,5 @@ brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
 
   [kafka.topic]
   log_message = "log"
-  log_message_tmpl = "log-%s"
+  log_message_fmt = "log-%s"
   value_metric = "metric"
