@@ -1,0 +1,22 @@
+[cf]
+# Endpoint where nozzle consumes logs
+doppler_address = "wss://doppler..."
+
+# Endpoint where nozzle fetches the access token
+# to read the firehose messages. 
+uaa_address = "https://uaa..."
+
+# username & password to fetch the firehose access token
+username = "tcnksm"
+password = "xyz"
+
+[kafka]
+# The list of kafka brokers IP
+brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
+
+  # Topic kafka topic rule
+  # Each events are sent to the each topic on kafka
+  [kafka.topic]
+  log_message = "log"
+  log_message_fmt = "log-%s"
+  value_metric = "metric"

@@ -1,5 +1,4 @@
 *.test
 bin/
 Procfile
-kafka-firehose-nozzle.toml
 manifest.yml
