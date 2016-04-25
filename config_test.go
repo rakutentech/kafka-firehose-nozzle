@@ -18,18 +18,18 @@ func TestLoadConfig(t *testing.T) {
 			in:      "basic.toml",
 			success: true,
 			config: &Config{
-				CF: &CF{
+				CF: CF{
 					DopplerAddr: "wss://doppler.cloudfoundry.net",
 					UAAAddr:     "https://uaa.cloudfoundry.net",
 					Username:    "tcnksm",
 					Password:    "xyz",
 				},
-				Kafka: &Kafka{
+				Kafka: Kafka{
 					Brokers: []string{"192.168.1.1:9092", "192.168.1.2:9092", "192.168.1.3:9092"},
-					Topic: &Topic{
-						LogMessage:     "log",
-						LogMessageTmpl: "log-%s",
-						ValueMetric:    "metric",
+					Topic: Topic{
+						LogMessage:    "log",
+						LogMessageFmt: "log-%s",
+						ValueMetric:   "metric",
 					},
 				},
 			},
@@ -51,8 +51,8 @@ func TestLoadConfig(t *testing.T) {
 				t.Fatalf("#%d expect %q to be nil", i, err)
 			}
 
-			if !reflect.DeepEqual(*config, *tc.config) {
-				t.Fatalf("#%d expect to %#v to be eq %#v", i, *config.Kafka, *tc.config.Kafka)
+			if !reflect.DeepEqual(config, tc.config) {
+				t.Fatalf("#%d expect to %#v to be eq %#v", i, config, tc.config)
 			}
 			continue
 		}

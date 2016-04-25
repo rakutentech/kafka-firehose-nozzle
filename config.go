@@ -8,8 +8,8 @@ import (
 
 // Config is kafka-firehose-nozzle configuration.
 type Config struct {
-	CF    *CF    `toml:"cf"`
-	Kafka *Kafka `toml:"kafka"`
+	CF    CF    `toml:"cf"`
+	Kafka Kafka `toml:"kafka"`
 }
 
 // CF holds CloudFoundry related configuration.
@@ -33,13 +33,13 @@ type CF struct {
 // Kafka holds Kafka related configuration
 type Kafka struct {
 	Brokers []string `toml:"brokers"`
-	Topic   *Topic   `toml:"topic"`
+	Topic   Topic    `toml:"topic"`
 }
 
 type Topic struct {
-	LogMessage     string `toml:"log_message"`
-	LogMessageTmpl string `toml:"log_message_tmpl"`
-	ValueMetric    string `toml:"value_metric"`
+	LogMessage    string `toml:"log_message"`
+	LogMessageFmt string `toml:"log_message_fmt"`
+	ValueMetric   string `toml:"value_metric"`
 }
 
 // LoadConfig reads configuration file
