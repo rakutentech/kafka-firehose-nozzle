@@ -8,7 +8,7 @@ updatedeps:
 deps:
 	go get github.com/tools/godep
 
-build: deps
+build: deps generate
 	godep go build -o bin/kafka-firehose-nozzle
 
 test: 
@@ -36,3 +36,6 @@ cover:
 	godep go test -coverprofile=cover.out
 	go tool cover -html cover.out
 	rm cover.out
+
+generate:
+	go generate
