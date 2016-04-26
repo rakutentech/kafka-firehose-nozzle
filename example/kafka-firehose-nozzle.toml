@@ -1,3 +1,5 @@
+subscription_id = "example-kafka-firehose-nozzle"
+
 [cf]
 # Endpoint where nozzle consumes logs
 doppler_address = "wss://doppler..."

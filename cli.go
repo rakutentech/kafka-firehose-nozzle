@@ -10,9 +10,8 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
-
 	"text/template"
+	"time"
 
 	"github.com/hashicorp/logutils"
 	"github.com/rakutentech/go-nozzle"
@@ -29,7 +28,7 @@ const (
 
 const (
 	// DefaultCfgPath is default config file path
-	DefaultCfgPath = "kafka-firehose-nozzle.toml"
+	DefaultCfgPath = "example/kafka-firehose-nozzle.toml"
 
 	// DefaultUAATimeout is default timeout for requesting
 	// auth token to UAA server.
@@ -40,8 +39,14 @@ const (
 	DefaultSubscriptionID = "debug-kafka-firehose-nozzle"
 )
 
+const (
+	EnvUAAPassword = "UAA_PASSWORD"
+)
+
 // godocFile is file name for godoc
-const godocFile = "doc.go"
+const (
+	godocFile = "doc.go"
+)
 
 // CLI is the command line object
 type CLI struct {
@@ -109,15 +114,18 @@ func (cli *CLI) Run(args []string) int {
 		MinLevel: (logutils.LogLevel)(strings.ToUpper(logLevel)),
 		Writer:   cli.outStream,
 	}, "", log.LstdFlags)
-
 	logger.Printf("[INFO] LogLevel: %s", logLevel)
-	logger.Printf("[INFO] Subscription ID: %s", subscriptionID)
 
 	// Load configuration
 	config, err := LoadConfig(cfgPath)
 	if err != nil {
 		logger.Printf("[ERROR] Failed to load configuration file: %s", err)
 		return ExitCodeError
+	}
+	logger.Printf("[DEBUG] %#v", config)
+
+	if config.SubscriptionID == "" {
+		config.SubscriptionID = subscriptionID
 	}
 
 	// Start varz server.
@@ -134,7 +142,7 @@ func (cli *CLI) Run(args []string) int {
 		UaaAddr:        config.CF.UAAAddr,
 		Username:       config.CF.Username,
 		Password:       config.CF.Password,
-		SubscriptionID: subscriptionID,
+		SubscriptionID: config.SubscriptionID,
 		Logger:         logger,
 	}
 
@@ -153,7 +161,7 @@ func (cli *CLI) Run(args []string) int {
 	} else {
 		logger.Printf("[INFO] Use KafkaProducer")
 		var err error
-		producer, err = NewKafkaProducer(config)
+		producer, err = NewKafkaProducer(logger, config)
 		if err != nil {
 			logger.Printf("[ERROR] Failed to construct kafka producer: %s", err)
 			return ExitCodeError
