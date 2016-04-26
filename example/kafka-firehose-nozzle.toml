@@ -1,3 +1,8 @@
+# This is example toml file to configure 'firehose-kafka-nozzle'.
+# You can edit this file for your environment.
+
+# All data will be ddistributed to nozzle with same subscription ID.
+# https://github.com/cloudfoundry/loggregator#consuming-log-and-metric-data
 subscription_id = "example-kafka-firehose-nozzle"
 
 [cf]
@@ -19,6 +24,7 @@ uaa_address = "https://uaa..."
 username = "tcnksm"
 password = "xyz"
 
+# token for subscribing data from firehose
 token = "np9q8b4qp3;vqo...."
 
 [kafka]
