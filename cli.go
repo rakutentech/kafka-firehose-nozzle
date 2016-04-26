@@ -209,8 +209,8 @@ func (cli *CLI) Run(args []string) int {
 		}
 	}()
 
-	// Now we don't use this for nothing.
-	// Should be exported for monitoring
+	// Now we don't use this. But in future, it hould be used
+	// for monitoring
 	go func() {
 		for _ = range producer.Successes() {
 		}
