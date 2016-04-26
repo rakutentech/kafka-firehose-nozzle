@@ -8,7 +8,7 @@ updatedeps:
 deps:
 	go get github.com/tools/godep
 
-build: deps generate
+build: deps 
 	godep go build -o bin/kafka-firehose-nozzle
 
 test: 
