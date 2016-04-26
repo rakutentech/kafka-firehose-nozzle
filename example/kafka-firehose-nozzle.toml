@@ -2,6 +2,13 @@
 # Endpoint where nozzle consumes logs
 doppler_address = "wss://doppler..."
 
+# To access to the firehoze and consume logs from there,
+# you need an access token for that.
+# 
+# You can just set it at `token` property in this file.
+# Or you can provide uaa endpoint and username/password.
+# It automatically grants token before connecting.
+
 # Endpoint where nozzle fetches the access token
 # to read the firehose messages. 
 uaa_address = "https://uaa..."
@@ -9,6 +16,8 @@ uaa_address = "https://uaa..."
 # username & password to fetch the firehose access token
 username = "tcnksm"
 password = "xyz"
+
+token = "np9q8b4qp3;vqo...."
 
 [kafka]
 # The list of kafka brokers IP
