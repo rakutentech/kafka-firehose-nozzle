@@ -25,7 +25,7 @@ const (
 	DefaultLogMessageTopic  = "log-message"
 )
 
-func NewKafkaProducer(config *Config) (NozzleProducer, error) {
+func NewKafkaProducer(logger *log.Logger, config *Config) (NozzleProducer, error) {
 	// Setup kafka async producer (We must use sync producer)
 	// TODO (tcnksm): Enable to configure more properties.
 	producerConfig := sarama.NewConfig()
@@ -54,6 +54,7 @@ func NewKafkaProducer(config *Config) (NozzleProducer, error) {
 
 	return &KafkaProducer{
 		AsyncProducer: asyncProducer,
+		Logger:        logger,
 
 		logMessageTopic:    kafkaTopic.LogMessage,
 		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
