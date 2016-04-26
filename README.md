@@ -1,4 +1,6 @@
-# kafka-firehose-nozzle
+# kafka-firehose-nozzle 
+
+[![Build Status](http://img.shields.io/travis/rakutentech/kafka-firehose-nozzle.svg?style=flat-square)](https://travis-ci.org/rakutentech/kafka-firehose-nozzle) [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/rakutentech/kafka-firehose-nozzle) 
 
 `kafka-firehose-nozzle` is [CloudFoundry (CF) nozzle](https://docs.cloudfoundry.org/loggregator/architecture.html#nozzles) for [Apache Kafka](http://kafka.apache.org/). It consumes data from the Loggregator Firehose and then publishes it to Apache Kafka. 
 
