@@ -285,4 +285,5 @@ Available options:
     -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
     -debug             Output event to stdout instead of producing message to kafka
     -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR)
+
 `
