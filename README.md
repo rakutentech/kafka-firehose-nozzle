@@ -18,11 +18,15 @@ The following are available options,
 
 ```bash
 -config PATH       Path to configuraiton file
+-username NAME     username to grant access token to connect firehose
+-password PASS     password to grant access token to connect firehose
 -worker NUM        Number of producer worker. Default is number of CPU core
 -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
 -debug             Output event to stdout instead of producing message to kafka
 -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR)
 ```
+
+You can set `password` via `UAA_PASSWORD` environmental variable.
 
 ## Configuration
 
