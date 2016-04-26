@@ -1,4 +1,3 @@
 *.test
 bin/
-Procfile
-manifest.yml
+
