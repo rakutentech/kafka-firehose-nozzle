@@ -1,3 +1,5 @@
+subscription_id = "kafka-firehose-nozzle"
+
 [cf]
 doppler_address = "wss://doppler.cloudfoundry.net"
 uaa_address = "https://uaa.cloudfoundry.net"

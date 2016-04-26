@@ -18,6 +18,7 @@ func TestLoadConfig(t *testing.T) {
 			in:      "basic.toml",
 			success: true,
 			config: &Config{
+				SubscriptionID: "kafka-firehose-nozzle",
 				CF: CF{
 					DopplerAddr: "wss://doppler.cloudfoundry.net",
 					UAAAddr:     "https://uaa.cloudfoundry.net",
