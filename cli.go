@@ -209,6 +209,13 @@ func (cli *CLI) Run(args []string) int {
 		}
 	}()
 
+	// Now we don't use this for nothing.
+	// Should be exported for monitoring
+	go func() {
+		for _ = range producer.Successes() {
+		}
+	}()
+
 	// Handle producer error
 	go func() {
 		// cancel all other producer goroutine
