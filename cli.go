@@ -30,17 +30,20 @@ const (
 	// DefaultCfgPath is default config file path
 	DefaultCfgPath = "example/kafka-firehose-nozzle.toml"
 
+	// DefaultUsername to grant access token for firehose
+	DefaultUsername = "admin"
+
 	// DefaultUAATimeout is default timeout for requesting
 	// auth token to UAA server.
 	DefaultUAATimeout = 20 * time.Second
 
 	// DefaultSubscriptionID is default subscription ID for
-	// loggregagor firehose
+	// loggregagor firehose.
 	DefaultSubscriptionID = "debug-kafka-firehose-nozzle"
 )
 
 const (
-	EnvUAAPassword = "UAA_PASSWORD"
+	EnvPassword = "UAA_PASSWORD"
 )
 
 // godocFile is file name for godoc
@@ -59,6 +62,8 @@ type CLI struct {
 func (cli *CLI) Run(args []string) int {
 	var (
 		cfgPath        string
+		username       string
+		password       string
 		subscriptionID string
 		logLevel       string
 		worker         int
@@ -76,7 +81,9 @@ func (cli *CLI) Run(args []string) int {
 	}
 
 	flags.StringVar(&cfgPath, "config", DefaultCfgPath, "")
-	flags.StringVar(&subscriptionID, "subscription", DefaultSubscriptionID, "")
+	flags.StringVar(&subscriptionID, "subscription", "", "")
+	flags.StringVar(&username, "username", "", "")
+	flags.StringVar(&password, "password", os.Getenv(EnvPassword), "")
 	flags.StringVar(&logLevel, "log-level", "INFO", "")
 	flags.IntVar(&worker, "worker", runtime.NumCPU(), "")
 	flags.BoolVar(&varz, "varz-server", false, "")
@@ -92,6 +99,7 @@ func (cli *CLI) Run(args []string) int {
 		return ExitCodeError
 	}
 
+	// Generate godoc
 	if genGodoc {
 		if err := godoc(); err != nil {
 			fmt.Fprintf(cli.errStream, "Faild to generate godoc %s\n", err)
@@ -124,8 +132,20 @@ func (cli *CLI) Run(args []string) int {
 	}
 	logger.Printf("[DEBUG] %#v", config)
 
-	if config.SubscriptionID == "" {
+	if subscriptionID != "" {
 		config.SubscriptionID = subscriptionID
+	} else if config.SubscriptionID != "" {
+		config.SubscriptionID = DefaultSubscriptionID
+	}
+
+	if username != "" {
+		config.CF.Username = username
+	} else if config.CF.Username != "" {
+		config.CF.Username = DefaultUsername
+	}
+
+	if password != "" {
+		config.CF.Password = password
 	}
 
 	// Start varz server.
@@ -289,6 +309,8 @@ Usage:
 Available options:
 
     -config PATH       Path to configuraiton file
+    -username NAME     username to grant access token to connect firehose
+    -password PASS     password to grant access token to connect firehose
     -worker NUM        Number of producer worker. Default is number of CPU core
     -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
     -debug             Output event to stdout instead of producing message to kafka
