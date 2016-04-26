@@ -134,13 +134,13 @@ func (cli *CLI) Run(args []string) int {
 
 	if subscriptionID != "" {
 		config.SubscriptionID = subscriptionID
-	} else if config.SubscriptionID != "" {
+	} else if config.SubscriptionID == "" {
 		config.SubscriptionID = DefaultSubscriptionID
 	}
 
 	if username != "" {
 		config.CF.Username = username
-	} else if config.CF.Username != "" {
+	} else if config.CF.Username == "" {
 		config.CF.Username = DefaultUsername
 	}
 
