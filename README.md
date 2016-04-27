@@ -6,6 +6,8 @@
 
 The firehose generates events which are defined on [dropsonde-protocol](https://github.com/cloudfoundry/dropsonde-protocol). You can set Kafka topic for each event type (e.g., by default, `LogMessage` events are publish to `log-message` topic). Events are encoded in [protocol buffers](https://developers.google.com/protocol-buffers/) between CF components but when to publish to kafka, events are decoded to plain json text.
 
+*NOTE*: Currently we only support `LogMessage` and `ValueMetric` events (We will support others soon). 
+
 `kafka-firehose-nozzle` is written by Golang and built with [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package. 
 
 ## Usage
