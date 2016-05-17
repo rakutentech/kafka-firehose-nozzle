@@ -163,6 +163,7 @@ func (cli *CLI) Run(args []string) int {
 		Username:       config.CF.Username,
 		Password:       config.CF.Password,
 		SubscriptionID: config.SubscriptionID,
+		Insecure:       config.InsecureSSLSkipVerify,
 		Logger:         logger,
 	}
 

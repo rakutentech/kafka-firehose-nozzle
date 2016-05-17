@@ -8,9 +8,10 @@ import (
 
 // Config is kafka-firehose-nozzle configuration.
 type Config struct {
-	SubscriptionID string `toml:"subscription_id"`
-	CF             CF     `toml:"cf"`
-	Kafka          Kafka  `toml:"kafka"`
+	SubscriptionID        string `toml:"subscription_id"`
+	InsecureSSLSkipVerify bool   `toml:"insecure_ssl_skip_verify"`
+	CF                    CF     `toml:"cf"`
+	Kafka                 Kafka  `toml:"kafka"`
 }
 
 // CF holds CloudFoundry related configuration.
