@@ -1,4 +1,5 @@
 subscription_id = "kafka-firehose-nozzle"
+insecure_ssl_skip_verify = true
 
 [cf]
 doppler_address = "wss://doppler.cloudfoundry.net"

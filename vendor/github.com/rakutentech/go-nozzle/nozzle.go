@@ -62,8 +62,11 @@ type Config struct {
 	// access token if Token is empty.
 	Password string
 
-	// Insecure is used for insecure connection with doppler.
-	// Default value is false (Connect with TLS).
+	// Insecure is used for skipping verifying insecure connection with doppler
+	// and UAA. Default value is false, not skipping.
+	//
+	// If it true, by default, connection to doppler & UAA will be insecure.
+	// We strongly recommend not to set true instead of testing purpose.
 	Insecure bool
 
 	// DebugPrinter is noaa.DebugPrinter. It's used for debugging

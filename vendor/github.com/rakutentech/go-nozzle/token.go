@@ -26,8 +26,8 @@ type defaultTokenFetcher struct {
 	username string
 	password string
 	timeout  time.Duration
-
-	logger *log.Logger
+	insecure bool
+	logger   *log.Logger
 }
 
 // Fetch gets access token from UAA server. This auth token
@@ -41,7 +41,7 @@ func (tf *defaultTokenFetcher) Fetch() (string, error) {
 
 	resCh, errCh := make(chan string), make(chan error)
 	go func() {
-		token, err := client.GetAuthToken(tf.username, tf.password, false)
+		token, err := client.GetAuthToken(tf.username, tf.password, tf.insecure)
 		if err != nil {
 			errCh <- err
 		}
@@ -86,6 +86,7 @@ func newDefaultTokenFetcher(config *Config) (*defaultTokenFetcher, error) {
 		timeout:  config.UaaTimeout,
 		username: config.Username,
 		password: config.Password,
+		insecure: config.Insecure,
 		logger:   config.Logger,
 	}
 
