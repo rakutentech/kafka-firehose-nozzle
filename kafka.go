@@ -102,8 +102,14 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
-		case event := <-eventCh:
+		case event, ok := <-eventCh:
+			if !ok {
+				kp.Logger.Printf("[ERROR] Nozzle consumer eventCh is closed")
+				return
+			}
+
 			kp.input(event)
+
 		case <-ctx.Done():
 			// Stop process immediately
 			kp.Logger.Printf("[INFO] Stop kafka producer")
