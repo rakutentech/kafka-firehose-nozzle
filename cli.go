@@ -196,12 +196,38 @@ func (cli *CLI) Run(args []string) int {
 	go func() {
 		for {
 			select {
-			case err := <-nozzleConsumer.Errors():
+			// The following comments are from noaa client comments.
+			//
+			// "Whenever an error is encountered, the error will be sent down the error
+			// channel and Firehose will attempt to reconnect up to 5 times.  After five
+			// failed reconnection attempts, Firehose will give up and close the error and
+			// Envelope channels."
+			//
+			// When noaa client gives up recconection to doppler, nozzle should be
+			// terminated instead of infinity loop. We deploy nozzle on CF as CF app.
+			// This means we can ask platform to restart nozzle when terminated.
+			//
+			// In future, we should implement restart/retry fuctionality in nozzle (or go-nozzle)
+			// and avoid to rely on the specific platform (so that we can deploy this anywhere).
+			case err, ok := <-nozzleConsumer.Errors():
+
+				// This means noaa consumer stopped consuming and close its channel.
+				if !ok {
+					logger.Printf("[ERROR] Nozzle consumer's error channel is closed")
+
+					// Call cancellFunc and then stop all nozzle workers
+					cancel()
+
+					// Finish error handline goroutine
+					return
+				}
+
 				if err == nil {
 					continue
 				}
 
 				// Connection retry is done on noaa side (5 times)
+				// After 5 times but can not be recovered, then channel is closed.
 				logger.Printf("[ERROR] Received error from nozzle consumer: %s", err)
 
 			case err := <-nozzleConsumer.Detects():
@@ -223,10 +249,6 @@ func (cli *CLI) Run(args []string) int {
 		defer cancel()
 
 		for err := range producer.Errors() {
-			if err == nil {
-				continue
-			}
-
 			logger.Printf("[ERROR] Faield to produce logs: %s", err)
 			return
 		}
