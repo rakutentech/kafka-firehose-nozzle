@@ -128,7 +128,7 @@ func (cli *CLI) Run(args []string) int {
 	logger.Printf("[INFO] %s version: %s", Name, Version)
 	logger.Printf("[INFO] Go version: %s (%s/%s)",
 		runtime.Version(), runtime.GOOS, runtime.GOARCH)
-	logger.Printf("[INFO] Num of CPU: %s", runtime.NumCPU())
+	logger.Printf("[INFO] Num of CPU: %d", runtime.NumCPU())
 
 	// Load configuration
 	config, err := LoadConfig(cfgPath)
@@ -153,6 +153,10 @@ func (cli *CLI) Run(args []string) int {
 	if password != "" {
 		config.CF.Password = password
 	}
+
+	// Initialize stats
+	stats := NewStats()
+	go stats.PerSec()
 
 	// Start varz server.
 	// This is for running this app as PaaS application (need to accept http request)
@@ -188,7 +192,7 @@ func (cli *CLI) Run(args []string) int {
 	} else {
 		logger.Printf("[INFO] Use KafkaProducer")
 		var err error
-		producer, err = NewKafkaProducer(logger, config)
+		producer, err = NewKafkaProducer(logger, stats, config)
 		if err != nil {
 			logger.Printf("[ERROR] Failed to construct kafka producer: %s", err)
 			return ExitCodeError
@@ -197,6 +201,28 @@ func (cli *CLI) Run(args []string) int {
 
 	// Create a ctx for cancelation signal across the goroutined producers.
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Display stats in every x second.
+	duration := 10 * time.Second
+	go func() {
+		ticker := time.NewTicker(duration)
+		for {
+			select {
+			case <-ticker.C:
+				logger.Printf("[INFO] Consume per sec: %d", stats.ConsumePerSec)
+				logger.Printf("[INFO] Sum of consumed messages: %d", stats.Consume)
+
+				logger.Printf("[INFO] Publish per sec: %d", stats.PublishPerSec)
+				logger.Printf("[INFO] Sum of published messages: %d", stats.Publish)
+
+				logger.Printf("[INFO] Publish delay: %d", stats.Consume-stats.Publish)
+
+				logger.Printf("[INFO] Sum of failed consume: %d", stats.ConsumeFail)
+				logger.Printf("[INFO] Sum of failed publish: %d", stats.PublishFail)
+				logger.Printf("[INFO] Sum of slowConsumer alerts: %d", stats.SlowConsumer)
+			}
+		}
+	}()
 
 	// Handle nozzle consumer error and slow consumer alerts
 	go func() {
@@ -231,9 +257,11 @@ func (cli *CLI) Run(args []string) int {
 				// Connection retry is done on noaa side (5 times)
 				// After 5 times but can not be recovered, then channel is closed.
 				logger.Printf("[ERROR] Received error from nozzle consumer: %s", err)
+				stats.Inc(ConsumeFail)
 
 			case err := <-nozzleConsumer.Detects():
 				logger.Printf("[ERROR] Detect slowConsumerAlert: %s", err)
+				stats.Inc(SlowConsumer)
 			}
 		}
 	}()
@@ -242,16 +270,19 @@ func (cli *CLI) Run(args []string) int {
 	// for monitoring
 	go func() {
 		for _ = range producer.Successes() {
+			stats.Inc(Publish)
 		}
 	}()
 
 	// Handle producer error
+	// TODO(tcnksm): Buffer and restart when it recover
 	go func() {
 		// cancel all other producer goroutine
 		defer cancel()
 
 		for err := range producer.Errors() {
 			logger.Printf("[ERROR] Faield to produce logs: %s", err)
+			stats.Inc(PublishFail)
 			return
 		}
 	}()
