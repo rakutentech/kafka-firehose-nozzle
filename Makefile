@@ -6,12 +6,12 @@ updatedeps:
 	godep save
 
 deps:
-	go get github.com/tools/godep
+	go get -v github.com/tools/godep
 
 build: deps 
 	godep go build -o bin/kafka-firehose-nozzle
 
-test: 
+test: deps
 	godep go test -v -parallel 5
 
 bench:
