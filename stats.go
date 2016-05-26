@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"sync/atomic"
 	"time"
 )
@@ -12,25 +13,33 @@ const (
 	ConsumeFail
 	Publish
 	PublishFail
-	SlowConsumer
+	SlowConsumerAlert
 )
 
 // Stats stores various stats infomation
 type Stats struct {
-	Consume     uint64
-	ConsumeFail uint64
+	Consume       uint64 `json:"consume"`
+	ConsumePerSec uint64 `json:"consume_per_sec"`
+	ConsumeFail   uint64 `json:"consume_fail"`
 
-	Publish     uint64
-	PublishFail uint64
+	Publish       uint64 `json:"publish"`
+	PublishPerSec uint64 `json:"publish_per_sec"`
+	PublishFail   uint64 `json:"publish_fail"`
 
-	SlowConsumer uint64
+	SlowConsumerAlert uint64 `json:"slow_consumer_alert"`
 
-	ConsumePerSec uint64
-	PublishPerSec uint64
+	// Delay is Consume - Pulish
+	// This indicate how slow publish to kafka
+	Delay uint64 `json:"delay"`
 }
 
 func NewStats() *Stats {
 	return &Stats{}
+}
+
+func (s *Stats) Json() ([]byte, error) {
+	s.Delay = s.Consume - s.Publish
+	return json.Marshal(s)
 }
 
 func (s *Stats) PerSec() {
@@ -58,7 +67,7 @@ func (s *Stats) Inc(statsType StatsType) {
 		atomic.AddUint64(&s.Publish, 1)
 	case PublishFail:
 		atomic.AddUint64(&s.PublishFail, 1)
-	case SlowConsumer:
-		atomic.AddUint64(&s.SlowConsumer, 1)
+	case SlowConsumerAlert:
+		atomic.AddUint64(&s.SlowConsumerAlert, 1)
 	}
 }

@@ -30,6 +30,10 @@ const (
 	// DefaultCfgPath is default config file path
 	DefaultCfgPath = "example/kafka-firehose-nozzle.toml"
 
+	// DefaultStatsInterval is default interval of displaying
+	// stats info to console
+	DefaultStatsInterval = 10 * time.Second
+
 	// DefaultUsername to grant access token for firehose
 	DefaultUsername = "admin"
 
@@ -66,11 +70,15 @@ func (cli *CLI) Run(args []string) int {
 		password       string
 		subscriptionID string
 		logLevel       string
-		worker         int
-		varz           bool
-		debug          bool
-		version        bool
-		genGodoc       bool
+
+		worker int
+
+		statsInterval time.Duration
+
+		server   bool
+		debug    bool
+		version  bool
+		genGodoc bool
 	)
 
 	// Define option flag parsing
@@ -86,7 +94,8 @@ func (cli *CLI) Run(args []string) int {
 	flags.StringVar(&password, "password", os.Getenv(EnvPassword), "")
 	flags.StringVar(&logLevel, "log-level", "INFO", "")
 	flags.IntVar(&worker, "worker", runtime.NumCPU(), "")
-	flags.BoolVar(&varz, "varz-server", false, "")
+	flags.DurationVar(&statsInterval, "stats-interval", DefaultStatsInterval, "")
+	flags.BoolVar(&server, "server", false, "")
 	flags.BoolVar(&debug, "debug", false, "")
 	flags.BoolVar(&version, "version", false, "")
 
@@ -154,15 +163,18 @@ func (cli *CLI) Run(args []string) int {
 		config.CF.Password = password
 	}
 
-	// Initialize stats
+	// Initialize stats collector
 	stats := NewStats()
 	go stats.PerSec()
 
-	// Start varz server.
-	// This is for running this app as PaaS application (need to accept http request)
-	if varz {
-		varzServer := &VarzServer{Logger: logger}
-		go varzServer.Start()
+	// Start server.
+	if server {
+		Server := &Server{
+			Logger: logger,
+			Stats:  stats,
+		}
+
+		go Server.Start()
 	}
 
 	// Setup option struct for nozzle consumer.
@@ -202,24 +214,24 @@ func (cli *CLI) Run(args []string) int {
 	// Create a ctx for cancelation signal across the goroutined producers.
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Display stats in every x second.
-	duration := 10 * time.Second
+	// Display stats in every x seconds.
 	go func() {
-		ticker := time.NewTicker(duration)
+		logger.Printf("[INFO] Stats display interval: %s", statsInterval)
+		ticker := time.NewTicker(statsInterval)
 		for {
 			select {
 			case <-ticker.C:
 				logger.Printf("[INFO] Consume per sec: %d", stats.ConsumePerSec)
-				logger.Printf("[INFO] Sum of consumed messages: %d", stats.Consume)
+				logger.Printf("[INFO] Consumed messages: %d", stats.Consume)
 
 				logger.Printf("[INFO] Publish per sec: %d", stats.PublishPerSec)
-				logger.Printf("[INFO] Sum of published messages: %d", stats.Publish)
+				logger.Printf("[INFO] Published messages: %d", stats.Publish)
 
 				logger.Printf("[INFO] Publish delay: %d", stats.Consume-stats.Publish)
 
-				logger.Printf("[INFO] Sum of failed consume: %d", stats.ConsumeFail)
-				logger.Printf("[INFO] Sum of failed publish: %d", stats.PublishFail)
-				logger.Printf("[INFO] Sum of slowConsumer alerts: %d", stats.SlowConsumer)
+				logger.Printf("[INFO] Failed consume: %d", stats.ConsumeFail)
+				logger.Printf("[INFO] Failed publish: %d", stats.PublishFail)
+				logger.Printf("[INFO] SlowConsumer alerts: %d", stats.SlowConsumerAlert)
 			}
 		}
 	}()
@@ -261,7 +273,7 @@ func (cli *CLI) Run(args []string) int {
 
 			case err := <-nozzleConsumer.Detects():
 				logger.Printf("[ERROR] Detect slowConsumerAlert: %s", err)
-				stats.Inc(SlowConsumer)
+				stats.Inc(SlowConsumerAlert)
 			}
 		}
 	}()
@@ -275,7 +287,7 @@ func (cli *CLI) Run(args []string) int {
 	}()
 
 	// Handle producer error
-	// TODO(tcnksm): Buffer and restart when it recover
+	// TODO(tcnksm): Buffer and restart when it recovers
 	go func() {
 		// cancel all other producer goroutine
 		defer cancel()
@@ -371,12 +383,12 @@ Usage:
 
 Available options:
 
-    -config PATH       Path to configuraiton file
-    -username NAME     username to grant access token to connect firehose
-    -password PASS     password to grant access token to connect firehose
-    -worker NUM        Number of producer worker. Default is number of CPU core
-    -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
-    -debug             Output event to stdout instead of producing message to kafka
-    -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR)
-
+    -config PATH          Path to configuraiton file    
+    -username NAME        username to grant access token to connect firehose
+    -password PASS        password to grant access token to connect firehose
+    -worker NUM           Number of producer worker. Default is number of CPU core
+    -subscription ID      Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
+    -stats-interval TIME  How often display stats info to console  
+    -debug                Output event to stdout instead of producing message to kafka
+    -log-level LEVEL      Log level. Default level is INFO (DEBUG|INFO|ERROR)
 `
