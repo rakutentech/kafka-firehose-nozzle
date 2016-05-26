@@ -124,6 +124,12 @@ func (cli *CLI) Run(args []string) int {
 	}, "", log.LstdFlags)
 	logger.Printf("[INFO] LogLevel: %s", logLevel)
 
+	// Show basic infomation
+	logger.Printf("[INFO] %s version: %s", Name, Version)
+	logger.Printf("[INFO] Go version: %s (%s/%s)",
+		runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	logger.Printf("[INFO] Num of CPU: %s", runtime.NumCPU())
+
 	// Load configuration
 	config, err := LoadConfig(cfgPath)
 	if err != nil {

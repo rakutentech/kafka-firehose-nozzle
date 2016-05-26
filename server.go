@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	_ "net/http/pprof"
+
 	"github.com/fukata/golang-stats-api-handler"
 )
 
