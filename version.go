@@ -4,4 +4,4 @@ package main
 const Name string = "kafka-firehose-nozzle"
 
 // Version is command version
-const Version string = "0.1.1"
+const Version string = "0.1.2-dev"
