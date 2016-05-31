@@ -25,7 +25,7 @@ const (
 	DefaultLogMessageTopic  = "log-message"
 )
 
-func NewKafkaProducer(logger *log.Logger, config *Config) (NozzleProducer, error) {
+func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleProducer, error) {
 	// Setup kafka async producer (We must use sync producer)
 	// TODO (tcnksm): Enable to configure more properties.
 	producerConfig := sarama.NewConfig()
@@ -53,9 +53,9 @@ func NewKafkaProducer(logger *log.Logger, config *Config) (NozzleProducer, error
 	}
 
 	return &KafkaProducer{
-		AsyncProducer: asyncProducer,
-		Logger:        logger,
-
+		AsyncProducer:      asyncProducer,
+		Logger:             logger,
+		Stats:              stats,
 		logMessageTopic:    kafkaTopic.LogMessage,
 		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
 		valueMetricTopic:   kafkaTopic.ValueMetric,
@@ -72,6 +72,7 @@ type KafkaProducer struct {
 	valueMetricTopic string
 
 	Logger *log.Logger
+	Stats  *Stats
 
 	once sync.Once
 }
@@ -102,8 +103,14 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
-		case event := <-eventCh:
+		case event, ok := <-eventCh:
+			if !ok {
+				kp.Logger.Printf("[ERROR] Nozzle consumer eventCh is closed")
+				return
+			}
+
 			kp.input(event)
+
 		case <-ctx.Done():
 			// Stop process immediately
 			kp.Logger.Printf("[INFO] Stop kafka producer")
@@ -121,12 +128,14 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	case events.Envelope_HttpStop:
 		// Do nothing
 	case events.Envelope_LogMessage:
+		kp.Stats.Inc(Consume)
 		appID := event.GetLogMessage().GetAppId()
 		kp.Input() <- &sarama.ProducerMessage{
 			Topic: kp.LogMessageTopic(appID),
 			Value: &JsonEncoder{event: event},
 		}
 	case events.Envelope_ValueMetric:
+		kp.Stats.Inc(Consume)
 		kp.Input() <- &sarama.ProducerMessage{
 			Topic: kp.ValueMetricTopic(),
 			Value: &JsonEncoder{event: event},
