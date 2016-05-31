@@ -1,10 +1,11 @@
-## 0.1.1 (Not yet released)
+## 0.1.1 (2016-05-31)
 
 Bug fixies
 
 ### Added
 
-- Add Fundamental features
+- Application stats endpoint #5
+- `net/http/pprof` endpoint #5
 
 ### Deprecated
 
@@ -16,8 +17,8 @@ Bug fixies
 
 ### Fixed
 
-- Nothing
-
+- Test on travis #4
+- Handle upstream chan closing #3
 
 ## 0.1.0 (2016-04)
 
