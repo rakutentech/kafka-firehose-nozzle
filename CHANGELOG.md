@@ -1,3 +1,21 @@
+## 0.1.2 (Not released)
+
+### Added
+
+- Nothing
+
+### Deprecated
+
+- Nothing
+
+### Removed
+
+- Nothing
+
+### Fixed
+
+- Nothing
+
 ## 0.1.1 (2016-05-31)
 
 Bug fixies
