@@ -87,7 +87,8 @@ func TestNewKafkaProducer(t *testing.T) {
 		tc.config.Kafka.Brokers = []string{seed.Addr()}
 
 		// Create new kafka producer
-		producer, err := NewKafkaProducer(nil, tc.config)
+		stats := NewStats()
+		producer, err := NewKafkaProducer(nil, stats, tc.config)
 		if err != nil {
 			t.Fatalf("err: %s", err)
 		}
@@ -119,5 +120,6 @@ func TestNewKafkaProducer(t *testing.T) {
 				t.Fatalf("expect %q to be eq %q", msg.Topic, tc.topic)
 			}
 		}
+
 	}
 }

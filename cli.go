@@ -30,6 +30,10 @@ const (
 	// DefaultCfgPath is default config file path
 	DefaultCfgPath = "example/kafka-firehose-nozzle.toml"
 
+	// DefaultStatsInterval is default interval of displaying
+	// stats info to console
+	DefaultStatsInterval = 10 * time.Second
+
 	// DefaultUsername to grant access token for firehose
 	DefaultUsername = "admin"
 
@@ -66,11 +70,15 @@ func (cli *CLI) Run(args []string) int {
 		password       string
 		subscriptionID string
 		logLevel       string
-		worker         int
-		varz           bool
-		debug          bool
-		version        bool
-		genGodoc       bool
+
+		worker int
+
+		statsInterval time.Duration
+
+		server   bool
+		debug    bool
+		version  bool
+		genGodoc bool
 	)
 
 	// Define option flag parsing
@@ -86,7 +94,8 @@ func (cli *CLI) Run(args []string) int {
 	flags.StringVar(&password, "password", os.Getenv(EnvPassword), "")
 	flags.StringVar(&logLevel, "log-level", "INFO", "")
 	flags.IntVar(&worker, "worker", runtime.NumCPU(), "")
-	flags.BoolVar(&varz, "varz-server", false, "")
+	flags.DurationVar(&statsInterval, "stats-interval", DefaultStatsInterval, "")
+	flags.BoolVar(&server, "server", false, "")
 	flags.BoolVar(&debug, "debug", false, "")
 	flags.BoolVar(&version, "version", false, "")
 
@@ -124,6 +133,12 @@ func (cli *CLI) Run(args []string) int {
 	}, "", log.LstdFlags)
 	logger.Printf("[INFO] LogLevel: %s", logLevel)
 
+	// Show basic infomation
+	logger.Printf("[INFO] %s version: %s", Name, Version)
+	logger.Printf("[INFO] Go version: %s (%s/%s)",
+		runtime.Version(), runtime.GOOS, runtime.GOARCH)
+	logger.Printf("[INFO] Num of CPU: %d", runtime.NumCPU())
+
 	// Load configuration
 	config, err := LoadConfig(cfgPath)
 	if err != nil {
@@ -148,11 +163,18 @@ func (cli *CLI) Run(args []string) int {
 		config.CF.Password = password
 	}
 
-	// Start varz server.
-	// This is for running this app as PaaS application (need to accept http request)
-	if varz {
-		varzServer := &VarzServer{Logger: logger}
-		go varzServer.Start()
+	// Initialize stats collector
+	stats := NewStats()
+	go stats.PerSec()
+
+	// Start server.
+	if server {
+		Server := &Server{
+			Logger: logger,
+			Stats:  stats,
+		}
+
+		go Server.Start()
 	}
 
 	// Setup option struct for nozzle consumer.
@@ -182,7 +204,7 @@ func (cli *CLI) Run(args []string) int {
 	} else {
 		logger.Printf("[INFO] Use KafkaProducer")
 		var err error
-		producer, err = NewKafkaProducer(logger, config)
+		producer, err = NewKafkaProducer(logger, stats, config)
 		if err != nil {
 			logger.Printf("[ERROR] Failed to construct kafka producer: %s", err)
 			return ExitCodeError
@@ -191,6 +213,28 @@ func (cli *CLI) Run(args []string) int {
 
 	// Create a ctx for cancelation signal across the goroutined producers.
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Display stats in every x seconds.
+	go func() {
+		logger.Printf("[INFO] Stats display interval: %s", statsInterval)
+		ticker := time.NewTicker(statsInterval)
+		for {
+			select {
+			case <-ticker.C:
+				logger.Printf("[INFO] Consume per sec: %d", stats.ConsumePerSec)
+				logger.Printf("[INFO] Consumed messages: %d", stats.Consume)
+
+				logger.Printf("[INFO] Publish per sec: %d", stats.PublishPerSec)
+				logger.Printf("[INFO] Published messages: %d", stats.Publish)
+
+				logger.Printf("[INFO] Publish delay: %d", stats.Consume-stats.Publish)
+
+				logger.Printf("[INFO] Failed consume: %d", stats.ConsumeFail)
+				logger.Printf("[INFO] Failed publish: %d", stats.PublishFail)
+				logger.Printf("[INFO] SlowConsumer alerts: %d", stats.SlowConsumerAlert)
+			}
+		}
+	}()
 
 	// Handle nozzle consumer error and slow consumer alerts
 	go func() {
@@ -225,9 +269,11 @@ func (cli *CLI) Run(args []string) int {
 				// Connection retry is done on noaa side (5 times)
 				// After 5 times but can not be recovered, then channel is closed.
 				logger.Printf("[ERROR] Received error from nozzle consumer: %s", err)
+				stats.Inc(ConsumeFail)
 
 			case err := <-nozzleConsumer.Detects():
 				logger.Printf("[ERROR] Detect slowConsumerAlert: %s", err)
+				stats.Inc(SlowConsumerAlert)
 			}
 		}
 	}()
@@ -236,16 +282,19 @@ func (cli *CLI) Run(args []string) int {
 	// for monitoring
 	go func() {
 		for _ = range producer.Successes() {
+			stats.Inc(Publish)
 		}
 	}()
 
 	// Handle producer error
+	// TODO(tcnksm): Buffer and restart when it recovers
 	go func() {
 		// cancel all other producer goroutine
 		defer cancel()
 
 		for err := range producer.Errors() {
 			logger.Printf("[ERROR] Faield to produce logs: %s", err)
+			stats.Inc(PublishFail)
 			return
 		}
 	}()
@@ -334,12 +383,12 @@ Usage:
 
 Available options:
 
-    -config PATH       Path to configuraiton file
-    -username NAME     username to grant access token to connect firehose
-    -password PASS     password to grant access token to connect firehose
-    -worker NUM        Number of producer worker. Default is number of CPU core
-    -subscription ID   Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
-    -debug             Output event to stdout instead of producing message to kafka
-    -log-level LEVEL   Log level. Default level is INFO (DEBUG|INFO|ERROR)
-
+    -config PATH          Path to configuraiton file    
+    -username NAME        username to grant access token to connect firehose
+    -password PASS        password to grant access token to connect firehose
+    -worker NUM           Number of producer worker. Default is number of CPU core
+    -subscription ID      Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
+    -stats-interval TIME  How often display stats info to console  
+    -debug                Output event to stdout instead of producing message to kafka
+    -log-level LEVEL      Log level. Default level is INFO (DEBUG|INFO|ERROR)
 `
