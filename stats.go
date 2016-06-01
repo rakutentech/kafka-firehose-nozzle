@@ -2,8 +2,18 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"strconv"
 	"sync/atomic"
 	"time"
+)
+
+const (
+	defaultInstanceID int = 0
+)
+
+const (
+	EnvCFInstaceIndex = "CF_INSTANCE_INDEX"
 )
 
 type StatsType int
@@ -31,10 +41,28 @@ type Stats struct {
 	// Delay is Consume - Pulish
 	// This indicate how slow publish to kafka
 	Delay uint64 `json:"delay"`
+
+	// InstanceID is ID for nozzle instance.
+	// This is used to identify stats from different instances.
+	// By default, it's defaultInstanceID
+	InstanceID int `json:"instance_id"`
 }
 
 func NewStats() *Stats {
-	return &Stats{}
+	instanceID := defaultInstanceID
+	if idStr := os.Getenv(EnvCFInstaceIndex); len(idStr) != 0 {
+		var err error
+		instanceID, err = strconv.Atoi(idStr)
+		if err != nil {
+			// If it's failed to conv str to int
+			// use default var
+			instanceID = defaultInstanceID
+		}
+	}
+
+	return &Stats{
+		InstanceID: instanceID,
+	}
 }
 
 func (s *Stats) Json() ([]byte, error) {

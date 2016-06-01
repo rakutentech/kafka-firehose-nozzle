@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"sync"
 	"testing"
 )
@@ -48,7 +49,8 @@ func TestStatsJson(t *testing.T) {
   "publish_per_sec": 0,
   "publish_fail": 0,
   "slow_consumer_alert": 0,
-  "delay": 1
+  "delay": 1,
+  "instance_id": 0
 }`
 
 	b, _ := s.Json()
@@ -57,5 +59,33 @@ func TestStatsJson(t *testing.T) {
 	json.Indent(&buf, b, "", "  ")
 	if buf.String() != expect {
 		t.Fatalf("expect %v to be eq %v", buf.String(), expect)
+	}
+}
+
+func setEnv(k, v string) func() {
+	prev := os.Getenv(k)
+	os.Setenv(k, v)
+	return func() {
+		os.Setenv(k, prev)
+	}
+}
+
+func TestNewStats(t *testing.T) {
+	reset := setEnv(EnvCFInstaceIndex, "4")
+	defer reset()
+
+	stats := NewStats()
+	if stats.InstanceID != 4 {
+		t.Fatalf("expect %d to be eq 4", stats.InstanceID)
+	}
+}
+
+func TestNewStats_nonNumber(t *testing.T) {
+	reset := setEnv(EnvCFInstaceIndex, "ab")
+	defer reset()
+
+	stats := NewStats()
+	if stats.InstanceID != defaultInstanceID {
+		t.Fatalf("expect %d to be eq %d", stats.InstanceID, defaultInstanceID)
 	}
 }
