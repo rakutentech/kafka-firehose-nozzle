@@ -71,7 +71,7 @@ func setEnv(k, v string) func() {
 }
 
 func TestNewStats(t *testing.T) {
-	reset := setEnv(EnvCFInstaceIndex, "4")
+	reset := setEnv(EnvCFInstanceIndex, "4")
 	defer reset()
 
 	stats := NewStats()
@@ -81,7 +81,7 @@ func TestNewStats(t *testing.T) {
 }
 
 func TestNewStats_nonNumber(t *testing.T) {
-	reset := setEnv(EnvCFInstaceIndex, "ab")
+	reset := setEnv(EnvCFInstanceIndex, "ab")
 	defer reset()
 
 	stats := NewStats()
