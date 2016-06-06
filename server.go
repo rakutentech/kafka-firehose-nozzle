@@ -66,6 +66,7 @@ type statsHandler struct {
 }
 
 func (h *statsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	body, err := h.stats.Json()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
