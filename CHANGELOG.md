@@ -1,8 +1,8 @@
-## 0.1.2 (Not released)
+## 0.1.2 (Not yet release)
 
 ### Added
 
-- Nothing
+- `instacen_id` in stats field #6
 
 ### Deprecated
 
