@@ -13,7 +13,7 @@ const (
 )
 
 const (
-	EnvCFInstaceIndex = "CF_INSTANCE_INDEX"
+	EnvCFInstanceIndex = "CF_INSTANCE_INDEX"
 )
 
 type StatsType int
@@ -50,7 +50,7 @@ type Stats struct {
 
 func NewStats() *Stats {
 	instanceID := defaultInstanceID
-	if idStr := os.Getenv(EnvCFInstaceIndex); len(idStr) != 0 {
+	if idStr := os.Getenv(EnvCFInstanceIndex); len(idStr) != 0 {
 		var err error
 		instanceID, err = strconv.Atoi(idStr)
 		if err != nil {
