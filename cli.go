@@ -272,6 +272,7 @@ func (cli *CLI) Run(args []string) int {
 				stats.Inc(ConsumeFail)
 
 			case err := <-nozzleConsumer.Detects():
+				// TODO(tcnksm): Should know how many logs are dropped.
 				logger.Printf("[ERROR] Detect slowConsumerAlert: %s", err)
 				stats.Inc(SlowConsumerAlert)
 			}
@@ -295,7 +296,6 @@ func (cli *CLI) Run(args []string) int {
 		for err := range producer.Errors() {
 			logger.Printf("[ERROR] Faield to produce logs: %s", err)
 			stats.Inc(PublishFail)
-			return
 		}
 	}()
 

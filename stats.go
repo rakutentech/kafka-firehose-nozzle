@@ -34,7 +34,9 @@ type Stats struct {
 
 	Publish       uint64 `json:"publish"`
 	PublishPerSec uint64 `json:"publish_per_sec"`
-	PublishFail   uint64 `json:"publish_fail"`
+
+	// This is same as the number of dropped message
+	PublishFail uint64 `json:"publish_fail"`
 
 	SlowConsumerAlert uint64 `json:"slow_consumer_alert"`
 

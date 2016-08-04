@@ -14,7 +14,7 @@ func logMessage(message, appId string, timestamp int64) *events.Envelope {
 	logMessage := &events.LogMessage{
 		Message:     []byte(message),
 		MessageType: events.LogMessage_OUT.Enum(),
-		AppId:       proto.String(testAppId),
+		AppId:       proto.String(appId),
 		SourceType:  proto.String("DEA"),
 		Timestamp:   proto.Int64(timestamp),
 	}
@@ -39,3 +39,9 @@ func valueMetric(timestamp int64) *events.Envelope {
 		Timestamp:   proto.Int64(timestamp),
 	}
 }
+
+type Int32Slice []int32
+
+func (p Int32Slice) Len() int           { return len(p) }
+func (p Int32Slice) Less(i, j int) bool { return p[i] < p[j] }
+func (p Int32Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }

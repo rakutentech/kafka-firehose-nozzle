@@ -31,6 +31,11 @@ token = "np9q8b4qp3;vqo...."
 # The list of kafka brokers IP
 brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
 
+# The producer retry logic
+retry_max = 10
+retry_backoff_ms = 500
+
+
   # Topic kafka topic rule
   # Each events are sent to the each topic on kafka
   [kafka.topic]

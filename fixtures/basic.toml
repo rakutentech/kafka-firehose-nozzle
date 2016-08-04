@@ -9,6 +9,8 @@ password = "xyz"
 
 [kafka]
 brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
+retry_max = 10
+retry_backoff_ms = 500
 
   [kafka.topic]
   log_message = "log"
