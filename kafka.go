@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -23,15 +24,30 @@ const (
 	// Default topic name for each event
 	DefaultValueMetricTopic = "value-metric"
 	DefaultLogMessageTopic  = "log-message"
+
+	DefaultKafkaRetryMax     = 5
+	DefaultKafkaRetryBackoff = 100 * time.Millisecond
 )
 
 func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleProducer, error) {
 	// Setup kafka async producer (We must use sync producer)
 	// TODO (tcnksm): Enable to configure more properties.
 	producerConfig := sarama.NewConfig()
-	producerConfig.Producer.Retry.Max = 5
+
+	producerConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	producerConfig.Producer.Return.Successes = true
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
+
+	producerConfig.Producer.Retry.Max = DefaultKafkaRetryMax
+	if config.Kafka.RetryMax != 0 {
+		producerConfig.Producer.Retry.Max = config.Kafka.RetryMax
+	}
+
+	producerConfig.Producer.Retry.Backoff = DefaultKafkaRetryBackoff
+	if config.Kafka.RetryBackoff != 0 {
+		backoff := time.Duration(config.Kafka.RetryBackoff) * time.Millisecond
+		producerConfig.Producer.Retry.Backoff = backoff
+	}
 
 	brokers := config.Kafka.Brokers
 	if len(brokers) < 1 {

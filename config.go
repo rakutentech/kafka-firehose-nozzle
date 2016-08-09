@@ -33,6 +33,9 @@ type CF struct {
 type Kafka struct {
 	Brokers []string `toml:"brokers"`
 	Topic   Topic    `toml:"topic"`
+
+	RetryMax     int `toml:"retry_max"`
+	RetryBackoff int `toml:"retry_backoff_ms"`
 }
 
 type Topic struct {

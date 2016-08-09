@@ -28,6 +28,10 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Kafka: Kafka{
 					Brokers: []string{"192.168.1.1:9092", "192.168.1.2:9092", "192.168.1.3:9092"},
+
+					RetryMax:     10,
+					RetryBackoff: 500,
+
 					Topic: Topic{
 						LogMessage:    "log",
 						LogMessageFmt: "log-%s",
