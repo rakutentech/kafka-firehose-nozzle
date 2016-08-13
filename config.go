@@ -34,8 +34,9 @@ type Kafka struct {
 	Brokers []string `toml:"brokers"`
 	Topic   Topic    `toml:"topic"`
 
-	RetryMax     int `toml:"retry_max"`
-	RetryBackoff int `toml:"retry_backoff_ms"`
+	RetryMax       int `toml:"retry_max"`
+	RetryBackoff   int `toml:"retry_backoff_ms"`
+	RepartitionMax int `toml:"repartition_max"`
 }
 
 type Topic struct {

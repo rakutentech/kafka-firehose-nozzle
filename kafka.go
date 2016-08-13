@@ -25,8 +25,9 @@ const (
 	DefaultValueMetricTopic = "value-metric"
 	DefaultLogMessageTopic  = "log-message"
 
-	DefaultKafkaRetryMax     = 5
-	DefaultKafkaRetryBackoff = 100 * time.Millisecond
+	DefaultKafkaRepartitionMax = 5
+	DefaultKafkaRetryMax       = 1
+	DefaultKafkaRetryBackoff   = 100 * time.Millisecond
 )
 
 func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleProducer, error) {
@@ -36,6 +37,7 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	producerConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	producerConfig.Producer.Return.Successes = true
+	producerConfig.Producer.Return.Errors = true // this is the default, but Errors are required for repartitioning
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
 
 	producerConfig.Producer.Retry.Max = DefaultKafkaRetryMax
@@ -68,6 +70,11 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		kafkaTopic.ValueMetric = DefaultValueMetricTopic
 	}
 
+	repartitionMax := DefaultKafkaRepartitionMax
+	if config.Kafka.RepartitionMax != 0 {
+		repartitionMax = config.Kafka.RepartitionMax
+	}
+
 	return &KafkaProducer{
 		AsyncProducer:      asyncProducer,
 		Logger:             logger,
@@ -75,12 +82,16 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		logMessageTopic:    kafkaTopic.LogMessage,
 		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
 		valueMetricTopic:   kafkaTopic.ValueMetric,
+		repartitionMax:     repartitionMax,
+		errors:             make(chan *sarama.ProducerError),
 	}, nil
 }
 
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	repartitionMax int
 
 	logMessageTopic    string
 	logMessageTopicFmt string
@@ -90,7 +101,13 @@ type KafkaProducer struct {
 	Logger *log.Logger
 	Stats  *Stats
 
+	errors chan *sarama.ProducerError
+
 	once sync.Once
+}
+
+type metadata struct {
+	retries int
 }
 
 // init sets default logger
@@ -112,6 +129,11 @@ func (kp *KafkaProducer) ValueMetricTopic() string {
 	return kp.valueMetricTopic
 }
 
+// Errors
+func (kp *KafkaProducer) Errors() <-chan *sarama.ProducerError {
+	return kp.errors
+}
+
 // Produce produces event to kafka
 func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
 	kp.once.Do(kp.init)
@@ -131,12 +153,29 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 			// Stop process immediately
 			kp.Logger.Printf("[INFO] Stop kafka producer")
 			return
+
+		case producerErr := <-kp.AsyncProducer.Errors():
+			// Instead of giving up, try to resubmit the message so that it can end up
+			// on a different partition (we don't care which partition is used)
+			// This is a workaround for https://github.com/Shopify/sarama/issues/514
+			md, _ := producerErr.Msg.Metadata.(metadata)
+			kp.Logger.Printf("[DEBUG] Got producer error %+v", producerErr)
+
+			if md.retries >= kp.repartitionMax {
+				kp.errors <- producerErr
+				continue
+			}
+
+			kp.Logger.Printf("[DEBUG] Repartioning")
+			producerErr.Msg.Metadata = metadata{retries: md.retries + 1}
+			producerErr.Msg.Partition = 0
+			kp.Input() <- producerErr.Msg
 		}
 	}
 }
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
-	switch eventType := event.GetEventType(); eventType {
+	switch event.GetEventType() {
 	case events.Envelope_HttpStart:
 		// Do nothing
 	case events.Envelope_HttpStartStop:
@@ -147,14 +186,16 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 		kp.Stats.Inc(Consume)
 		appID := event.GetLogMessage().GetAppId()
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: kp.LogMessageTopic(appID),
-			Value: &JsonEncoder{event: event},
+			Topic:    kp.LogMessageTopic(appID),
+			Value:    &JsonEncoder{event: event},
+			Metadata: metadata{retries: 0},
 		}
 	case events.Envelope_ValueMetric:
 		kp.Stats.Inc(Consume)
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: kp.ValueMetricTopic(),
-			Value: &JsonEncoder{event: event},
+			Topic:    kp.ValueMetricTopic(),
+			Value:    &JsonEncoder{event: event},
+			Metadata: metadata{retries: 0},
 		}
 	case events.Envelope_CounterEvent:
 		// Do nothing
