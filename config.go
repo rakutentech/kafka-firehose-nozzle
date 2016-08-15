@@ -39,9 +39,11 @@ type Kafka struct {
 }
 
 type Topic struct {
-	LogMessage    string `toml:"log_message"`
-	LogMessageFmt string `toml:"log_message_fmt"`
-	ValueMetric   string `toml:"value_metric"`
+	LogMessage         string `toml:"log_message"`
+	LogMessageFmt      string `toml:"log_message_fmt"`
+	ValueMetric        string `toml:"value_metric"`
+	ContainerMetric    string `toml:"container_metric"`
+	ContainerMetricFmt string `toml:"container_metric_fmt"`
 }
 
 // LoadConfig reads configuration file

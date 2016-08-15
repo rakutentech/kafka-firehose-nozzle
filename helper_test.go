@@ -40,6 +40,18 @@ func valueMetric(timestamp int64) *events.Envelope {
 	}
 }
 
+func containerMetric(appId string, timestamp int64) *events.Envelope {
+	return &events.Envelope{
+		EventType: events.Envelope_ContainerMetric.Enum(),
+		Origin:    proto.String("fake-origin-3"),
+		Timestamp: proto.Int64(timestamp),
+		ContainerMetric: &events.ContainerMetric{
+			ApplicationId: proto.String(appId),
+			InstanceIndex: proto.Int32(0),
+		},
+	}
+}
+
 type Int32Slice []int32
 
 func (p Int32Slice) Len() int           { return len(p) }

@@ -33,6 +33,12 @@ func TestKafkaProducer(t *testing.T) {
 			event:  valueMetric(time.Now().UnixNano()),
 		},
 
+		{
+			config: &Config{},
+			topic:  DefaultContainerMetricTopic,
+			event:  containerMetric(testAppId, time.Now().UnixNano()),
+		},
+
 		// use fixed topic name
 		{
 			config: &Config{
@@ -59,6 +65,19 @@ func TestKafkaProducer(t *testing.T) {
 			event: valueMetric(time.Now().UnixNano()),
 		},
 
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						ContainerMetric: "containermetric",
+					},
+				},
+			},
+
+			topic: "containermetric",
+			event: containerMetric(testAppId, time.Now().UnixNano()),
+		},
+
 		// use log-message topic format
 		{
 			config: &Config{
@@ -70,6 +89,18 @@ func TestKafkaProducer(t *testing.T) {
 			},
 			topic: fmt.Sprintf("log-%s", testAppId),
 			event: logMessage("", testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						ContainerMetricFmt: "container-metric-%s",
+					},
+				},
+			},
+			topic: fmt.Sprintf("container-metric-%s", testAppId),
+			event: containerMetric(testAppId, time.Now().UnixNano()),
 		},
 	}
 

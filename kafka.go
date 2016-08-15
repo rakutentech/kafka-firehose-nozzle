@@ -22,8 +22,9 @@ const (
 
 const (
 	// Default topic name for each event
-	DefaultValueMetricTopic = "value-metric"
-	DefaultLogMessageTopic  = "log-message"
+	DefaultContainerMetricTopic = "container-metric"
+	DefaultValueMetricTopic     = "value-metric"
+	DefaultLogMessageTopic      = "log-message"
 
 	DefaultKafkaRetryMax     = 5
 	DefaultKafkaRetryBackoff = 100 * time.Millisecond
@@ -68,13 +69,19 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		kafkaTopic.ValueMetric = DefaultValueMetricTopic
 	}
 
+	if kafkaTopic.ContainerMetric == "" {
+		kafkaTopic.ContainerMetric = DefaultContainerMetricTopic
+	}
+
 	return &KafkaProducer{
-		AsyncProducer:      asyncProducer,
-		Logger:             logger,
-		Stats:              stats,
-		logMessageTopic:    kafkaTopic.LogMessage,
-		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
-		valueMetricTopic:   kafkaTopic.ValueMetric,
+		AsyncProducer:           asyncProducer,
+		Logger:                  logger,
+		Stats:                   stats,
+		logMessageTopic:         kafkaTopic.LogMessage,
+		logMessageTopicFmt:      kafkaTopic.LogMessageFmt,
+		valueMetricTopic:        kafkaTopic.ValueMetric,
+		containerMetricTopic:    kafkaTopic.ContainerMetric,
+		containerMetricTopicFmt: kafkaTopic.ContainerMetricFmt,
 	}, nil
 }
 
@@ -86,6 +93,9 @@ type KafkaProducer struct {
 	logMessageTopicFmt string
 
 	valueMetricTopic string
+
+	containerMetricTopic    string
+	containerMetricTopicFmt string
 
 	Logger *log.Logger
 	Stats  *Stats
@@ -110,6 +120,14 @@ func (kp *KafkaProducer) LogMessageTopic(appID string) string {
 
 func (kp *KafkaProducer) ValueMetricTopic() string {
 	return kp.valueMetricTopic
+}
+
+func (kp *KafkaProducer) ContainerMetricTopic(appID string) string {
+	if kp.containerMetricTopicFmt != "" {
+		return fmt.Sprintf(kp.containerMetricTopicFmt, appID)
+	}
+
+	return kp.containerMetricTopic
 }
 
 // Produce produces event to kafka
@@ -161,6 +179,11 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	case events.Envelope_Error:
 		// Do nothing
 	case events.Envelope_ContainerMetric:
-		// Do nothing
+		kp.Stats.Inc(Consume)
+		appID := event.GetContainerMetric().GetApplicationId()
+		kp.Input() <- &sarama.ProducerMessage{
+			Topic: kp.ContainerMetricTopic(appID),
+			Value: &JsonEncoder{event: event},
+		}
 	}
 }
