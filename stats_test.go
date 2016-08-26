@@ -37,19 +37,27 @@ func TestStatsInc(t *testing.T) {
 func TestStatsJson(t *testing.T) {
 	s := NewStats()
 
-	s.Inc(Consume)
-	s.Inc(Consume)
-	s.Inc(Publish)
+	for i := 0; i < 100; i++ {
+		s.Inc(Consume)
+	}
+
+	for i := 0; i < 50; i++ {
+		s.Inc(PublishFail)
+	}
+
+	for i := 0; i < 50; i++ {
+		s.Inc(Publish)
+	}
 
 	expect := `{
-  "consume": 2,
+  "consume": 100,
   "consume_per_sec": 0,
   "consume_fail": 0,
-  "publish": 1,
+  "publish": 50,
   "publish_per_sec": 0,
-  "publish_fail": 0,
+  "publish_fail": 50,
   "slow_consumer_alert": 0,
-  "delay": 1,
+  "delay": 0,
   "instance_id": 0
 }`
 

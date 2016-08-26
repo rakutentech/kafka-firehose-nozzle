@@ -68,7 +68,7 @@ func NewStats() *Stats {
 }
 
 func (s *Stats) Json() ([]byte, error) {
-	s.Delay = s.Consume - s.Publish
+	s.Delay = s.Consume - s.Publish - s.PublishFail
 	return json.Marshal(s)
 }
 
