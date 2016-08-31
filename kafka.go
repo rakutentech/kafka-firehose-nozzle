@@ -37,8 +37,10 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	producerConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	producerConfig.Producer.Return.Successes = true
-	producerConfig.Producer.Return.Errors = true // this is the default, but Errors are required for repartitioning
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
+
+	// This is the default, but Errors are required for repartitioning
+	producerConfig.Producer.Return.Errors = true
 
 	producerConfig.Producer.Retry.Max = DefaultKafkaRetryMax
 	if config.Kafka.RetryMax != 0 {
@@ -92,6 +94,7 @@ type KafkaProducer struct {
 	sarama.AsyncProducer
 
 	repartitionMax int
+	errors         chan *sarama.ProducerError
 
 	logMessageTopic    string
 	logMessageTopicFmt string
@@ -101,12 +104,13 @@ type KafkaProducer struct {
 	Logger *log.Logger
 	Stats  *Stats
 
-	errors chan *sarama.ProducerError
-
 	once sync.Once
 }
 
+// metadata is metadata which will be injected to ProducerMessage.Metadata.
+// This is used only when publish is failed and re-partitioning by ourself.
 type metadata struct {
+	// retires is the number of re-partitioning
 	retries int
 }
 
@@ -129,7 +133,6 @@ func (kp *KafkaProducer) ValueMetricTopic() string {
 	return kp.valueMetricTopic
 }
 
-// Errors
 func (kp *KafkaProducer) Errors() <-chan *sarama.ProducerError {
 	return kp.errors
 }
@@ -141,6 +144,11 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
+		case <-ctx.Done():
+			// Stop process immediately
+			kp.Logger.Printf("[INFO] Stop kafka producer")
+			return
+
 		case event, ok := <-eventCh:
 			if !ok {
 				kp.Logger.Printf("[ERROR] Nozzle consumer eventCh is closed")
@@ -149,27 +157,30 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 
 			kp.input(event)
 
-		case <-ctx.Done():
-			// Stop process immediately
-			kp.Logger.Printf("[INFO] Stop kafka producer")
-			return
-
 		case producerErr := <-kp.AsyncProducer.Errors():
 			// Instead of giving up, try to resubmit the message so that it can end up
-			// on a different partition (we don't care which partition is used)
+			// on a different partition (we don't care about order of message)
 			// This is a workaround for https://github.com/Shopify/sarama/issues/514
-			md, _ := producerErr.Msg.Metadata.(metadata)
+			meta, _ := producerErr.Msg.Metadata.(metadata)
 			kp.Logger.Printf("[DEBUG] Got producer error %+v", producerErr)
 
-			if md.retries >= kp.repartitionMax {
+			if meta.retries >= kp.repartitionMax {
 				kp.errors <- producerErr
 				continue
 			}
 
 			kp.Logger.Printf("[DEBUG] Repartioning")
-			producerErr.Msg.Metadata = metadata{retries: md.retries + 1}
+			producerErr.Msg.Metadata = metadata{
+				retries: meta.retries + 1,
+			}
+
+			// Set default partition then it will be
+			// rebalanced on sarama side.
 			producerErr.Msg.Partition = 0
-			kp.Input() <- producerErr.Msg
+
+			// Get message which is failed to publish
+			originalMsg := producerErr.Msg
+			kp.Input() <- originalMsg
 		}
 	}
 }
