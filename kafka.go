@@ -169,18 +169,20 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 				continue
 			}
 
+			// NOTE: We need to re-create Message because original message
+			// which producer.Error stores internal state (unexported field)
+			// and it effect partitioning.
 			kp.Logger.Printf("[DEBUG] Repartioning")
-			producerErr.Msg.Metadata = metadata{
-				retries: meta.retries + 1,
-			}
-
-			// Set default partition then it will be
-			// rebalanced on sarama side.
-			producerErr.Msg.Partition = 0
-
-			// Get message which is failed to publish
 			originalMsg := producerErr.Msg
-			kp.Input() <- originalMsg
+			kp.Input() <- &sarama.ProducerMessage{
+				Topic: originalMsg.Topic,
+				Value: originalMsg.Value,
+
+				// Update retry count
+				Metadata: metadata{
+					retries: meta.retries + 1,
+				},
+			}
 		}
 	}
 }
