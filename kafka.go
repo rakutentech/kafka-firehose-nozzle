@@ -25,8 +25,9 @@ const (
 	DefaultValueMetricTopic = "value-metric"
 	DefaultLogMessageTopic  = "log-message"
 
-	DefaultKafkaRetryMax     = 5
-	DefaultKafkaRetryBackoff = 100 * time.Millisecond
+	DefaultKafkaRepartitionMax = 5
+	DefaultKafkaRetryMax       = 1
+	DefaultKafkaRetryBackoff   = 100 * time.Millisecond
 )
 
 func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleProducer, error) {
@@ -37,6 +38,9 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 	producerConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	producerConfig.Producer.Return.Successes = true
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
+
+	// This is the default, but Errors are required for repartitioning
+	producerConfig.Producer.Return.Errors = true
 
 	producerConfig.Producer.Retry.Max = DefaultKafkaRetryMax
 	if config.Kafka.RetryMax != 0 {
@@ -68,6 +72,11 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		kafkaTopic.ValueMetric = DefaultValueMetricTopic
 	}
 
+	repartitionMax := DefaultKafkaRepartitionMax
+	if config.Kafka.RepartitionMax != 0 {
+		repartitionMax = config.Kafka.RepartitionMax
+	}
+
 	return &KafkaProducer{
 		AsyncProducer:      asyncProducer,
 		Logger:             logger,
@@ -75,12 +84,17 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		logMessageTopic:    kafkaTopic.LogMessage,
 		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
 		valueMetricTopic:   kafkaTopic.ValueMetric,
+		repartitionMax:     repartitionMax,
+		errors:             make(chan *sarama.ProducerError),
 	}, nil
 }
 
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	repartitionMax int
+	errors         chan *sarama.ProducerError
 
 	logMessageTopic    string
 	logMessageTopicFmt string
@@ -91,6 +105,13 @@ type KafkaProducer struct {
 	Stats  *Stats
 
 	once sync.Once
+}
+
+// metadata is metadata which will be injected to ProducerMessage.Metadata.
+// This is used only when publish is failed and re-partitioning by ourself.
+type metadata struct {
+	// retires is the number of re-partitioning
+	retries int
 }
 
 // init sets default logger
@@ -112,6 +133,10 @@ func (kp *KafkaProducer) ValueMetricTopic() string {
 	return kp.valueMetricTopic
 }
 
+func (kp *KafkaProducer) Errors() <-chan *sarama.ProducerError {
+	return kp.errors
+}
+
 // Produce produces event to kafka
 func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
 	kp.once.Do(kp.init)
@@ -119,6 +144,11 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
+		case <-ctx.Done():
+			// Stop process immediately
+			kp.Logger.Printf("[INFO] Stop kafka producer")
+			return
+
 		case event, ok := <-eventCh:
 			if !ok {
 				kp.Logger.Printf("[ERROR] Nozzle consumer eventCh is closed")
@@ -127,16 +157,38 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 
 			kp.input(event)
 
-		case <-ctx.Done():
-			// Stop process immediately
-			kp.Logger.Printf("[INFO] Stop kafka producer")
-			return
+		case producerErr := <-kp.AsyncProducer.Errors():
+			// Instead of giving up, try to resubmit the message so that it can end up
+			// on a different partition (we don't care about order of message)
+			// This is a workaround for https://github.com/Shopify/sarama/issues/514
+			meta, _ := producerErr.Msg.Metadata.(metadata)
+			kp.Logger.Printf("[DEBUG] Got producer error %+v", producerErr)
+
+			if meta.retries >= kp.repartitionMax {
+				kp.errors <- producerErr
+				continue
+			}
+
+			// NOTE: We need to re-create Message because original message
+			// which producer.Error stores internal state (unexported field)
+			// and it effect partitioning.
+			kp.Logger.Printf("[DEBUG] Repartioning")
+			originalMsg := producerErr.Msg
+			kp.Input() <- &sarama.ProducerMessage{
+				Topic: originalMsg.Topic,
+				Value: originalMsg.Value,
+
+				// Update retry count
+				Metadata: metadata{
+					retries: meta.retries + 1,
+				},
+			}
 		}
 	}
 }
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
-	switch eventType := event.GetEventType(); eventType {
+	switch event.GetEventType() {
 	case events.Envelope_HttpStart:
 		// Do nothing
 	case events.Envelope_HttpStartStop:
@@ -147,14 +199,16 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 		kp.Stats.Inc(Consume)
 		appID := event.GetLogMessage().GetAppId()
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: kp.LogMessageTopic(appID),
-			Value: &JsonEncoder{event: event},
+			Topic:    kp.LogMessageTopic(appID),
+			Value:    &JsonEncoder{event: event},
+			Metadata: metadata{retries: 0},
 		}
 	case events.Envelope_ValueMetric:
 		kp.Stats.Inc(Consume)
 		kp.Input() <- &sarama.ProducerMessage{
-			Topic: kp.ValueMetricTopic(),
-			Value: &JsonEncoder{event: event},
+			Topic:    kp.ValueMetricTopic(),
+			Value:    &JsonEncoder{event: event},
+			Metadata: metadata{retries: 0},
 		}
 	case events.Envelope_CounterEvent:
 		// Do nothing
