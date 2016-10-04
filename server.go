@@ -32,7 +32,8 @@ func (s *Server) Start() {
 
 	http.HandleFunc("/", index)
 	http.Handle("/stats/app", &statsHandler{
-		stats: s.Stats,
+		stats:  s.Stats,
+		logger: s.Logger,
 	})
 	http.HandleFunc("/stats/runtime", stats_api.Handler)
 
@@ -63,6 +64,8 @@ func index(w http.ResponseWriter, _ *http.Request) {
 
 type statsHandler struct {
 	stats *Stats
+
+	logger *log.Logger
 }
 
 func (h *statsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -73,6 +76,7 @@ func (h *statsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Internal Server Error: %s\n", err)
 		return
 	}
+	h.logger.Printf("[DEBUG] Stats response body: %s", string(body))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Contentt-Length", strconv.Itoa(len(body)))
