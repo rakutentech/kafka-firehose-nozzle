@@ -229,6 +229,8 @@ func (cli *CLI) Run(args []string) int {
 
 				logger.Printf("[INFO] Publish delay: %d", stats.Consume-stats.Publish-stats.PublishFail)
 
+				logger.Printf("[INFO] SubInput buffer: %d", stats.SubInputBuffer)
+
 				logger.Printf("[INFO] Failed consume: %d", stats.ConsumeFail)
 				logger.Printf("[INFO] Failed publish: %d", stats.PublishFail)
 				logger.Printf("[INFO] SlowConsumer alerts: %d", stats.SlowConsumerAlert)

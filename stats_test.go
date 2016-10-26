@@ -49,6 +49,14 @@ func TestStatsJson(t *testing.T) {
 		s.Inc(Publish)
 	}
 
+	for i := 0; i < 100; i++ {
+		s.Inc(SubInputBuffer)
+	}
+
+	for i := 0; i < 50; i++ {
+		s.Dec(SubInputBuffer)
+	}
+
 	expect := `{
   "consume": 100,
   "consume_per_sec": 0,
@@ -57,6 +65,7 @@ func TestStatsJson(t *testing.T) {
   "publish_per_sec": 0,
   "publish_fail": 50,
   "slow_consumer_alert": 0,
+  "subinupt_buffer": 50,
   "delay": 0,
   "instance_id": 0
 }`
