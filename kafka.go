@@ -28,6 +28,9 @@ const (
 	DefaultKafkaRepartitionMax = 5
 	DefaultKafkaRetryMax       = 1
 	DefaultKafkaRetryBackoff   = 100 * time.Millisecond
+
+	DefaultChannelBufferSize  = 512 // Sarama default is 256
+	DefaultSubInputBufferSize = 1024
 )
 
 func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleProducer, error) {
@@ -53,6 +56,8 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		producerConfig.Producer.Retry.Backoff = backoff
 	}
 
+	producerConfig.ChannelBufferSize = DefaultChannelBufferSize
+
 	brokers := config.Kafka.Brokers
 	if len(brokers) < 1 {
 		return nil, fmt.Errorf("brokers are not provided")
@@ -77,6 +82,9 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		repartitionMax = config.Kafka.RepartitionMax
 	}
 
+	subInputBuffer := DefaultSubInputBufferSize
+	subInputCh := make(chan *sarama.ProducerMessage, subInputBuffer)
+
 	return &KafkaProducer{
 		AsyncProducer:      asyncProducer,
 		Logger:             logger,
@@ -85,6 +93,7 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
 		valueMetricTopic:   kafkaTopic.ValueMetric,
 		repartitionMax:     repartitionMax,
+		subInputCh:         subInputCh,
 		errors:             make(chan *sarama.ProducerError),
 	}, nil
 }
@@ -95,6 +104,9 @@ type KafkaProducer struct {
 
 	repartitionMax int
 	errors         chan *sarama.ProducerError
+
+	// SubInputCh is buffer for re-partitioning
+	subInputCh chan *sarama.ProducerMessage
 
 	logMessageTopic    string
 	logMessageTopicFmt string
@@ -141,6 +153,63 @@ func (kp *KafkaProducer) Errors() <-chan *sarama.ProducerError {
 func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Envelope) {
 	kp.once.Do(kp.init)
 
+	kp.Logger.Printf("[INFO] Start to watching producer error for re-partition")
+	go func() {
+		for producerErr := range kp.AsyncProducer.Errors() {
+			// Instead of giving up, try to resubmit the message so that it can end up
+			// on a different partition (we don't care about order of message)
+			// This is a workaround for https://github.com/Shopify/sarama/issues/514
+			meta, _ := producerErr.Msg.Metadata.(metadata)
+			kp.Logger.Printf("[ERROR] Producer error %+v", producerErr)
+
+			if meta.retries >= kp.repartitionMax {
+				kp.errors <- producerErr
+				continue
+			}
+
+			// NOTE: We need to re-create Message because original message
+			// which producer.Error stores internal state (unexported field)
+			// and it effect partitioning.
+			originalMsg := producerErr.Msg
+			msg := &sarama.ProducerMessage{
+				Topic: originalMsg.Topic,
+				Value: originalMsg.Value,
+
+				// Update retry count
+				Metadata: metadata{
+					retries: meta.retries + 1,
+				},
+			}
+
+			// If sarama buffer is full, then input it to nozzle side buffer
+			// (subInput) and retry to produce it later. When subInput is
+			// full, we drop message.
+			//
+			// TODO(tcnksm): Monitor subInput buffer.
+			select {
+			case kp.Input() <- msg:
+				kp.Logger.Printf("[DEBUG] Repartitioning")
+			default:
+				select {
+				case kp.subInputCh <- msg:
+					kp.Stats.Inc(SubInputBuffer)
+				default:
+					// If subInput is full, then drop message.....
+					kp.errors <- producerErr
+				}
+			}
+		}
+	}()
+
+	kp.Logger.Printf("[INFO] Start to sub input (buffer for sarama input)")
+	go func() {
+		for msg := range kp.subInputCh {
+			kp.Input() <- msg
+			kp.Logger.Printf("[DEBUG] Repartitioning (from subInput)")
+			kp.Stats.Dec(SubInputBuffer)
+		}
+	}()
+
 	kp.Logger.Printf("[INFO] Start loop to watch events")
 	for {
 		select {
@@ -156,33 +225,6 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 			}
 
 			kp.input(event)
-
-		case producerErr := <-kp.AsyncProducer.Errors():
-			// Instead of giving up, try to resubmit the message so that it can end up
-			// on a different partition (we don't care about order of message)
-			// This is a workaround for https://github.com/Shopify/sarama/issues/514
-			meta, _ := producerErr.Msg.Metadata.(metadata)
-			kp.Logger.Printf("[DEBUG] Got producer error %+v", producerErr)
-
-			if meta.retries >= kp.repartitionMax {
-				kp.errors <- producerErr
-				continue
-			}
-
-			// NOTE: We need to re-create Message because original message
-			// which producer.Error stores internal state (unexported field)
-			// and it effect partitioning.
-			kp.Logger.Printf("[DEBUG] Repartioning")
-			originalMsg := producerErr.Msg
-			kp.Input() <- &sarama.ProducerMessage{
-				Topic: originalMsg.Topic,
-				Value: originalMsg.Value,
-
-				// Update retry count
-				Metadata: metadata{
-					retries: meta.retries + 1,
-				},
-			}
 		}
 	}
 }

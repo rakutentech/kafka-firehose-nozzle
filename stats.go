@@ -24,6 +24,7 @@ const (
 	Publish
 	PublishFail
 	SlowConsumerAlert
+	SubInputBuffer
 )
 
 // Stats stores various stats infomation
@@ -39,6 +40,10 @@ type Stats struct {
 	PublishFail uint64 `json:"publish_fail"`
 
 	SlowConsumerAlert uint64 `json:"slow_consumer_alert"`
+
+	// SubInputBuffer is used to count number of current
+	// buffer on subInput.
+	SubInputBuffer int64 `json:"subinupt_buffer"`
 
 	// Delay is Consume - Pulish
 	// This indicate how slow publish to kafka
@@ -99,5 +104,14 @@ func (s *Stats) Inc(statsType StatsType) {
 		atomic.AddUint64(&s.PublishFail, 1)
 	case SlowConsumerAlert:
 		atomic.AddUint64(&s.SlowConsumerAlert, 1)
+	case SubInputBuffer:
+		atomic.AddInt64(&s.SubInputBuffer, 1)
+	}
+}
+
+func (s *Stats) Dec(statsType StatsType) {
+	switch statsType {
+	case SubInputBuffer:
+		atomic.AddInt64(&s.SubInputBuffer, -1)
 	}
 }
