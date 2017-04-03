@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
-	"golang.org/x/net/context"
 )
 
 type NozzleProducer interface {

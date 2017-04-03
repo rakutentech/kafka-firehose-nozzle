@@ -17,6 +17,9 @@ type Client interface {
 	// altered after it has been created.
 	Config() *Config
 
+	// Brokers returns the current set of active brokers as retrieved from cluster metadata.
+	Brokers() []*Broker
+
 	// Topics returns the set of available topics as retrieved from cluster metadata.
 	Topics() ([]string, error)
 
@@ -133,12 +136,12 @@ func NewClient(addrs []string, conf *Config) (Client, error) {
 		client.seedBrokers = append(client.seedBrokers, NewBroker(addrs[index]))
 	}
 
-	// do an initial fetch of all cluster metadata by specifing an empty list of topics
+	// do an initial fetch of all cluster metadata by specifying an empty list of topics
 	err := client.RefreshMetadata()
 	switch err {
 	case nil:
 		break
-	case ErrLeaderNotAvailable, ErrReplicaNotAvailable:
+	case ErrLeaderNotAvailable, ErrReplicaNotAvailable, ErrTopicAuthorizationFailed, ErrClusterAuthorizationFailed:
 		// indicates that maybe part of the cluster is down, but is not fatal to creating the client
 		Logger.Println(err)
 	default:
@@ -155,6 +158,16 @@ func NewClient(addrs []string, conf *Config) (Client, error) {
 
 func (client *client) Config() *Config {
 	return client.conf
+}
+
+func (client *client) Brokers() []*Broker {
+	client.lock.RLock()
+	defer client.lock.RUnlock()
+	brokers := make([]*Broker, 0)
+	for _, broker := range client.brokers {
+		brokers = append(brokers, broker)
+	}
+	return brokers
 }
 
 func (client *client) Close() error {
@@ -290,7 +303,7 @@ func (client *client) Leader(topic string, partitionID int32) (*Broker, error) {
 	leader, err := client.cachedLeader(topic, partitionID)
 
 	if leader == nil {
-		err := client.RefreshMetadata(topic)
+		err = client.RefreshMetadata(topic)
 		if err != nil {
 			return nil, err
 		}
@@ -521,6 +534,9 @@ func (client *client) getOffset(topic string, partitionID int32, time int64) (in
 	}
 
 	request := &OffsetRequest{}
+	if client.conf.Version.IsAtLeast(V0_10_1_0) {
+		request.Version = 1
+	}
 	request.AddBlock(topic, partitionID, time, 1)
 
 	response, err := broker.GetAvailableOffsets(request)
@@ -589,12 +605,12 @@ func (client *client) tryRefreshMetadata(topics []string, attemptsRemaining int)
 		switch err.(type) {
 		case nil:
 			// valid response, use it
-			if shouldRetry, err := client.updateMetadata(response); shouldRetry {
+			shouldRetry, err := client.updateMetadata(response)
+			if shouldRetry {
 				Logger.Println("client/metadata found some partitions to be leaderless")
 				return retry(err) // note: err can be nil
-			} else {
-				return err
 			}
+			return err
 
 		case PacketEncodingError:
 			// didn't even send, return the error
@@ -685,7 +701,7 @@ func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemainin
 	}
 
 	for broker := client.any(); broker != nil; broker = client.any() {
-		Logger.Printf("client/coordinator requesting coordinator for consumergoup %s from %s\n", consumerGroup, broker.Addr())
+		Logger.Printf("client/coordinator requesting coordinator for consumergroup %s from %s\n", consumerGroup, broker.Addr())
 
 		request := new(ConsumerMetadataRequest)
 		request.ConsumerGroup = consumerGroup
@@ -707,7 +723,7 @@ func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemainin
 
 		switch response.Err {
 		case ErrNoError:
-			Logger.Printf("client/coordinator coordinator for consumergoup %s is #%d (%s)\n", consumerGroup, response.Coordinator.ID(), response.Coordinator.Addr())
+			Logger.Printf("client/coordinator coordinator for consumergroup %s is #%d (%s)\n", consumerGroup, response.Coordinator.ID(), response.Coordinator.Addr())
 			return response, nil
 
 		case ErrConsumerCoordinatorNotAvailable:

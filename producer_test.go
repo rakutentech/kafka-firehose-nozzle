@@ -2,13 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"log"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/cloudfoundry/sonde-go/events"
-	"golang.org/x/net/context"
 )
 
 func TestLogProducer_implement(t *testing.T) {

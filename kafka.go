@@ -1,12 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"

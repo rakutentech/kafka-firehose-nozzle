@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sort"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
-	"golang.org/x/net/context"
 )
 
 func TestKafkaProducer(t *testing.T) {

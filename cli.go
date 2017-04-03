@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/hashicorp/logutils"
 	"github.com/rakutentech/go-nozzle"
-	"golang.org/x/net/context"
 )
 
 //go:generate ./bin/kafka-firehose-nozzle -gen-godoc
@@ -400,12 +400,12 @@ Usage:
 
 Available options:
 
-    -config PATH          Path to configuraiton file    
+    -config PATH          Path to configuraiton file
     -username NAME        username to grant access token to connect firehose
     -password PASS        password to grant access token to connect firehose
     -worker NUM           Number of producer worker. Default is number of CPU core
     -subscription ID      Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
-    -stats-interval TIME  How often display stats info to console  
+    -stats-interval TIME  How often display stats info to console
     -debug                Output event to stdout instead of producing message to kafka
     -log-level LEVEL      Log level. Default level is INFO (DEBUG|INFO|ERROR)
 `

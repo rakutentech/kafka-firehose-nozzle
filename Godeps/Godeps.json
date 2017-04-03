@@ -1,33 +1,41 @@
 {
 	"ImportPath": "github.com/rakutentech/kafka-firehose-nozzle",
-	"GoVersion": "go1.6",
+	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
 	"Deps": [
 		{
 			"ImportPath": "github.com/BurntSushi/toml",
-			"Comment": "v0.1.0-46-gbbd5bb6",
-			"Rev": "bbd5bb678321a0d6e58f1099321dfa73391c1b6f"
+			"Comment": "v0.3.0",
+			"Rev": "b26d9c308763d68093482582cea63d69be07a0f0"
 		},
 		{
 			"ImportPath": "github.com/Shopify/sarama",
-			"Comment": "v1.8.0-27-g68920ff",
-			"Rev": "68920ff1be3bbd31449ab1e2c255c50cedeb755c"
+			"Comment": "v1.11.0-44-g3efb95d",
+			"Rev": "3efb95dad8fbcd194d3c06f7b9c40eabeb719b36"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/uaago",
-			"Rev": "5253fdf54e4a464366e5ffa8e5f456f5f1e50a2f"
+			"Rev": "5673cb47f5a48458e28c77e5948503602312de2e"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-10-gdd6ec6b",
+			"Rev": "dd6ec6bd0a0182d44fbd738bcb044adeed8171bb"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa/consumer",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-10-gdd6ec6b",
+			"Rev": "dd6ec6bd0a0182d44fbd738bcb044adeed8171bb"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
+			"Comment": "v2.0.0-10-gdd6ec6b",
+			"Rev": "dd6ec6bd0a0182d44fbd738bcb044adeed8171bb"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa/errors",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-10-gdd6ec6b",
+			"Rev": "dd6ec6bd0a0182d44fbd738bcb044adeed8171bb"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
@@ -35,7 +43,8 @@
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
-			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+			"Comment": "v1.1.0",
+			"Rev": "346938d642f2ec3594ed81d874461961cd0faa76"
 		},
 		{
 			"ImportPath": "github.com/eapache/go-resiliency/breaker",
@@ -43,9 +52,13 @@
 			"Rev": "b86b1ec0dd4209a588dc1285cdd471e73525c0b3"
 		},
 		{
+			"ImportPath": "github.com/eapache/go-xerial-snappy",
+			"Rev": "bb955e01b9346ac19dc29eb16586c90ded99a98c"
+		},
+		{
 			"ImportPath": "github.com/eapache/queue",
-			"Comment": "v1.0.2",
-			"Rev": "ded5959c0d4e360646dc9e9908cff48666781367"
+			"Comment": "v1.0.2-7-g44cc805",
+			"Rev": "44cc805cf13205b55f69e14bcb69867d1ae92f98"
 		},
 		{
 			"ImportPath": "github.com/fukata/golang-stats-api-handler",
@@ -69,11 +82,12 @@
 		},
 		{
 			"ImportPath": "github.com/golang/snappy",
-			"Rev": "5f1c01d9f64b941dd9582c638279d046eda6ca31"
+			"Rev": "553a641470496b2327abcac10b36396bd98e45c9"
 		},
 		{
 			"ImportPath": "github.com/gorilla/websocket",
-			"Rev": "e2e3d8414d0fbae04004f151979f4e27c6747fe7"
+			"Comment": "v1.1.0-29-ga91eba7",
+			"Rev": "a91eba7f97777409bc2c443f5534d41dd20c5720"
 		},
 		{
 			"ImportPath": "github.com/hashicorp/logutils",
@@ -81,16 +95,25 @@
 		},
 		{
 			"ImportPath": "github.com/klauspost/crc32",
-			"Comment": "v1.0",
-			"Rev": "19b0b332c9e4516a6370a0456e6182c3b5036720"
+			"Comment": "v1.1-2-g1bab8b3",
+			"Rev": "1bab8b35b6bb565f92cbc97939610af9369f942a"
+		},
+		{
+			"ImportPath": "github.com/pierrec/lz4",
+			"Rev": "f5b77fd73d83122495309c0f459b810f83cc291f"
+		},
+		{
+			"ImportPath": "github.com/pierrec/xxHash/xxHash32",
+			"Comment": "v0.1-4-g5a00444",
+			"Rev": "5a004441f897722c627870a981d02b29924215fa"
 		},
 		{
 			"ImportPath": "github.com/rakutentech/go-nozzle",
 			"Rev": "5ea7d8dd3be1bceb05513fcff0a5cba6e806d706"
 		},
 		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
+			"ImportPath": "github.com/rcrowley/go-metrics",
+			"Rev": "1f30fe9094a513ce4c700b9a54458bbb0c96996c"
 		}
 	]
 }
