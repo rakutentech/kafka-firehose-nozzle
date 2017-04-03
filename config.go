@@ -27,6 +27,9 @@ type CF struct {
 	Username string `toml:"username"`
 	Password string `toml:"password"`
 	Token    string `toml:"token"`
+
+	// Firehose configuration
+	IdleTimeout int `toml:"idle_timeout"` // seconds
 }
 
 // Kafka holds Kafka related configuration

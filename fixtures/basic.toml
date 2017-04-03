@@ -6,6 +6,7 @@ doppler_address = "wss://doppler.cloudfoundry.net"
 uaa_address = "https://uaa.cloudfoundry.net"
 username = "tcnksm"
 password = "xyz"
+idle_timeout = 10 # seconds
 
 [kafka]
 brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
