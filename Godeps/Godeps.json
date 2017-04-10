@@ -39,7 +39,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
-			"Rev": "ae27095c3a1b9977a0ef1928b0147d5689f2e921"
+			"Rev": "78019103037ae46207993c8816e970d85bf1a9e4"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
