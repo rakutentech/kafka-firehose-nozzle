@@ -230,11 +230,7 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
 	switch event.GetEventType() {
-	case events.Envelope_HttpStart:
-		// Do nothing
 	case events.Envelope_HttpStartStop:
-		// Do nothing
-	case events.Envelope_HttpStop:
 		// Do nothing
 	case events.Envelope_LogMessage:
 		kp.Stats.Inc(Consume)
