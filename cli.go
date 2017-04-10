@@ -199,12 +199,18 @@ func (cli *CLI) Run(args []string) int {
 	}
 
 	// Setup default nozzle consumer.
-	nozzleConsumer, err := nozzle.NewDefaultConsumer(nozzleConfig)
+	nozzleConsumer, err := nozzle.NewConsumer(nozzleConfig)
 	if err != nil {
 		logger.Printf("[ERROR] Failed to construct nozzle consumer: %s", err)
 		return ExitCodeError
 	}
 
+	err = nozzleConsumer.Start()
+	if err != nil {
+		logger.Printf("[ERROR] Failed to start nozzle consumer: %s", err)
+		return ExitCodeError
+	}
+		
 	// Setup nozzle producer
 	var producer NozzleProducer
 	if debug {
