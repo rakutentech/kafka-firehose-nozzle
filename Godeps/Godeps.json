@@ -67,18 +67,18 @@
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-4-g6fe4aed3",
+			"Rev": "6fe4aed35b712b681d5d372e06da5344c22ed61f"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-4-g6fe4aed3",
+			"Rev": "6fe4aed35b712b681d5d372e06da5344c22ed61f"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-4-g6fe4aed3",
+			"Rev": "6fe4aed35b712b681d5d372e06da5344c22ed61f"
 		},
 		{
 			"ImportPath": "github.com/golang/snappy",
