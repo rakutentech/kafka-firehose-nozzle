@@ -31,7 +31,10 @@ config := &nozzle.Config{
 }
    
 // Create default consumer
-consumer, _  := nozzle.NewDefaultConsumer(config)
+consumer, _  := nozzle.NewConsumer(config)
+
+// Start consumer
+consumer.Start()
 
 // Consume events
 event := <-consumer.Events()

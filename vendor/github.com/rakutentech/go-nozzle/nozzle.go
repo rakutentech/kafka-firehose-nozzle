@@ -18,7 +18,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/cloudfoundry/noaa"
+	noaaConsumer "github.com/cloudfoundry/noaa/consumer"
 )
 
 // By default, all logs goes to ioutil.Discard.
@@ -72,15 +72,20 @@ type Config struct {
 	// DebugPrinter is noaa.DebugPrinter. It's used for debugging
 	// Noaa. Noaa is a client library to consume metric and log
 	// messages from Doppler.
-	DebugPrinter noaa.DebugPrinter
+	DebugPrinter noaaConsumer.DebugPrinter
 
 	// Logger is logger for go-nozzle. By default, output will be
 	// discarded and not be displayed.
 	Logger *log.Logger
 
+	// IdleTimeout is how much time to wait for a message to arrive. If no
+	// message arrives with this period, the ws connection is considered dead.
+	// If 0 (default) the timeout is disabled.
+	IdleTimeout time.Duration
+
 	// The following fileds are now only for testing.
-	tokenFetcher TokenFetcher
-	rawConsumer  RawConsumer
+	tokenFetcher tokenFetcher
+	rawConsumer  rawConsumer
 }
 
 // NewConsumer constructs a new consumer client for nozzle.
@@ -91,9 +96,9 @@ type Config struct {
 // admin to fetch the token.
 //
 // It returns error if the token is empty or can not fetch token from UAA
-// If token is not empty or successfully getting from UAA, then it starts
-// to consume firehose events and detecting slowConsumerAlerts.
-func NewDefaultConsumer(config *Config) (Consumer, error) {
+// If token is not empty or successfully getting from UAA, then it returns nozzle.Consumer.
+// (In initial version, it starts consuming here but now Start() should be called).
+func NewConsumer(config *Config) (Consumer, error) {
 	if config.Logger == nil {
 		config.Logger = defaultLogger
 	}
@@ -133,31 +138,21 @@ func NewDefaultConsumer(config *Config) (Consumer, error) {
 	rc := config.rawConsumer
 	if rc == nil {
 		var err error
-		rc, err = newRawConsumer(config)
+		rc, err = newRawDefaultConsumer(config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to construct default consumer: %s", err)
 		}
 	}
 
-	// Start consuming events from firehose.
-	eventsCh, errCh := rc.Consume()
-
-	// Construct default slowDetector
-	sd := &defaultSlowDetector{
-		logger: config.Logger,
-	}
-
-	// Start reading events from firehose and detect `slowConsumerAlert`.
-	// The detection is notified by detectCh.
-	eventsCh_, errCh_, detectCh := sd.Detect(eventsCh, errCh)
-
 	return &consumer{
-		rawConsumer:  rc,
-		slowDetector: sd,
-		eventCh:      eventsCh_,
-		errCh:        errCh_,
-		detectCh:     detectCh,
+		rawConsumer: rc,
+		logger:      config.Logger,
 	}, nil
+}
+
+// Deprecated: NewDefaultConsumer is deprecated, use NewConsumer instead
+func NewDefaultConsumer(config *Config) (Consumer, error) {
+	return NewConsumer(config)
 }
 
 // maskString is used to mask string which should not be displayed

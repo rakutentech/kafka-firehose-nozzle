@@ -9,18 +9,18 @@ import (
 )
 
 // SlowDetectCh is channel used to send `slowConsumerAlert` event.
-type SlowDetectCh chan error
+type slowDetectCh chan error
 
 // SlowDetector defines the interface for detecting `slowConsumerAlert`
 // event. By default, defaultSlowDetetor is used. It implements same detection
 // logic as https://github.com/cloudfoundry-incubator/datadog-firehose-nozzle.
-type SlowDetector interface {
+type slowDetector interface {
 	// Detect detects `slowConsumerAlert`. It works as pipe.
 	// It receives events from upstream (RawConsumer) and inspects that events
 	// and pass it to to downstream without modification.
 	//
 	// It returns SlowDetectCh and notify `slowConsumerAlert` there.
-	Detect(<-chan *events.Envelope, <-chan error) (<-chan *events.Envelope, <-chan error, SlowDetectCh)
+	Detect(<-chan *events.Envelope, <-chan error) (<-chan *events.Envelope, <-chan error, slowDetectCh)
 
 	// Stop stops slow consumer detection. If any returns error.
 	Stop() error
@@ -33,7 +33,7 @@ type defaultSlowDetector struct {
 }
 
 // Detect start to detect `slowConsumerAlert` event.
-func (sd *defaultSlowDetector) Detect(eventCh <-chan *events.Envelope, errCh <-chan error) (<-chan *events.Envelope, <-chan error, SlowDetectCh) {
+func (sd *defaultSlowDetector) Detect(eventCh <-chan *events.Envelope, errCh <-chan error) (<-chan *events.Envelope, <-chan error, slowDetectCh) {
 	sd.logger.Println("[INFO] Start detecting slowConsumerAlert event")
 
 	// Create new channel to pass producer
@@ -45,7 +45,7 @@ func (sd *defaultSlowDetector) Detect(eventCh <-chan *events.Envelope, errCh <-c
 	sd.doneCh = make(chan struct{})
 
 	// deteCh is used to send `slowConsumerAlert` event
-	detectCh := make(SlowDetectCh)
+	detectCh := make(slowDetectCh)
 
 	// Detect from from trafficcontroller event messages
 	go func() {
