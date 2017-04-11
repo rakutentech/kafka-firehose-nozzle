@@ -44,6 +44,10 @@ const (
 	// DefaultSubscriptionID is default subscription ID for
 	// loggregagor firehose.
 	DefaultSubscriptionID = "debug-kafka-firehose-nozzle"
+
+	// DefaultIdleTimeout is the default timeout for receiving a single message
+	// from the firehose
+	DefaultIdleTimeout = 60 * time.Second
 )
 
 const (
@@ -163,6 +167,10 @@ func (cli *CLI) Run(args []string) int {
 		config.CF.Password = password
 	}
 
+	if config.CF.IdleTimeout == 0 {
+		config.CF.IdleTimeout = int(DefaultIdleTimeout.Seconds())
+	}
+
 	// Initialize stats collector
 	stats := NewStats()
 	go stats.PerSec()
@@ -184,18 +192,25 @@ func (cli *CLI) Run(args []string) int {
 		UaaAddr:        config.CF.UAAAddr,
 		Username:       config.CF.Username,
 		Password:       config.CF.Password,
+		IdleTimeout:    time.Duration(config.CF.IdleTimeout) * time.Second,
 		SubscriptionID: config.SubscriptionID,
 		Insecure:       config.InsecureSSLSkipVerify,
 		Logger:         logger,
 	}
 
 	// Setup default nozzle consumer.
-	nozzleConsumer, err := nozzle.NewDefaultConsumer(nozzleConfig)
+	nozzleConsumer, err := nozzle.NewConsumer(nozzleConfig)
 	if err != nil {
 		logger.Printf("[ERROR] Failed to construct nozzle consumer: %s", err)
 		return ExitCodeError
 	}
 
+	err = nozzleConsumer.Start()
+	if err != nil {
+		logger.Printf("[ERROR] Failed to start nozzle consumer: %s", err)
+		return ExitCodeError
+	}
+		
 	// Setup nozzle producer
 	var producer NozzleProducer
 	if debug {

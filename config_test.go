@@ -25,6 +25,7 @@ func TestLoadConfig(t *testing.T) {
 					UAAAddr:     "https://uaa.cloudfoundry.net",
 					Username:    "tcnksm",
 					Password:    "xyz",
+					IdleTimeout: 10, // seconds
 				},
 				Kafka: Kafka{
 					Brokers: []string{"192.168.1.1:9092", "192.168.1.2:9092", "192.168.1.3:9092"},

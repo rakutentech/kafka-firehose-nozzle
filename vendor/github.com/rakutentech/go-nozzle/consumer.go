@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"time"
 
 	noaaConsumer "github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
@@ -23,13 +24,19 @@ type Consumer interface {
 	// Error returns the read channel of erros that occured during consuming.
 	Errors() <-chan error
 
+	// Start starts consuming upstream events by RawConsumer and stop SlowDetector.
+	// If any, returns error.
+	Start() error
+
 	// Close stop consuming upstream events by RawConsumer and stop SlowDetector.
+	// If any, returns error.
 	Close() error
 }
 
 type consumer struct {
-	rawConsumer  RawConsumer
-	slowDetector SlowDetector
+	rawConsumer  rawConsumer
+	slowDetector slowDetector
+	logger       *log.Logger
 
 	eventCh  <-chan *events.Envelope
 	errCh    <-chan error
@@ -51,6 +58,30 @@ func (c *consumer) Errors() <-chan error {
 	return c.errCh
 }
 
+// Start starts consuming & slowDetector
+func (c *consumer) Start() error {
+	// Start consuming events from firehose.
+	eventsCh, errCh := c.rawConsumer.Consume()
+
+	// Construct default slowDetector
+	sd := &defaultSlowDetector{
+		logger: c.logger,
+	}
+
+	// Store slowDetector (for Close() fucntion)
+	c.slowDetector = sd
+
+	// Start reading events from firehose and detect `slowConsumerAlert`.
+	// The detection is notified by detectCh.
+	c.eventCh, c.errCh, c.detectCh = sd.Detect(eventsCh, errCh)
+
+	// In current implementation no errors are happened.
+	//
+	// This is for preventing interfance change in future when
+	// we need to put some other function here and it returns error.
+	return nil
+}
+
 // Close closes connection with firehose and stop slowDetector.
 func (c *consumer) Close() error {
 	if err := c.rawConsumer.Close(); err != nil {
@@ -60,11 +91,11 @@ func (c *consumer) Close() error {
 	return c.slowDetector.Stop()
 }
 
-// RawConsumer defines the interface for consuming events from doppler firehose.
+// rawConsumer defines the interface for consuming events from doppler firehose.
 // The events pulled by RawConsumer pass to slowDetector and check slowDetector.
 //
 // By default, it uses https://github.com/cloudfoundry/noaa
-type RawConsumer interface {
+type rawConsumer interface {
 	// Consume starts cosuming firehose events. It must return 2 channel.
 	// The one is for sending the events from firehose
 	// and the other is for error occured while consuming.
@@ -75,7 +106,7 @@ type RawConsumer interface {
 	Close() error
 }
 
-type rawConsumer struct {
+type rawDefaultConsumer struct {
 	noaaConsumer *noaaConsumer.Consumer
 
 	dopplerAddr    string
@@ -83,13 +114,14 @@ type rawConsumer struct {
 	subscriptionID string
 	insecure       bool
 	debugPrinter   noaaConsumer.DebugPrinter
+	idleTimeout    time.Duration
 
 	logger *log.Logger
 }
 
 // Consume consumes firehose events from doppler.
 // Retry function is handled in noaa library (It will retry 5 times).
-func (c *rawConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
+func (c *rawDefaultConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 	c.logger.Printf(
 		"[INFO] Start consuming firehose events from Doppler (%s) with subscription ID %q",
 		c.dopplerAddr, c.subscriptionID)
@@ -104,6 +136,8 @@ func (c *rawConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 		nc.SetDebugPrinter(c.debugPrinter)
 	}
 
+	nc.SetIdleTimeout(c.idleTimeout)
+
 	// Start connection
 	eventChan, errChan := nc.Firehose(c.subscriptionID, c.token)
 
@@ -114,7 +148,7 @@ func (c *rawConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 	return eventChan, errChan
 }
 
-func (c *rawConsumer) Close() error {
+func (c *rawDefaultConsumer) Close() error {
 	c.logger.Printf("[INFO] Stop consuming firehose events")
 	if c.noaaConsumer == nil {
 		return fmt.Errorf("no connection with firehose")
@@ -124,7 +158,7 @@ func (c *rawConsumer) Close() error {
 }
 
 // validate validates struct has requirement fields or not
-func (c *rawConsumer) validate() error {
+func (c *rawDefaultConsumer) validate() error {
 	if c.dopplerAddr == "" {
 		return fmt.Errorf("DopplerAddr must not be empty")
 	}
@@ -141,14 +175,15 @@ func (c *rawConsumer) validate() error {
 }
 
 // newRawConsumer constructs new rawConsumer.
-func newRawConsumer(config *Config) (*rawConsumer, error) {
-	c := &rawConsumer{
+func newRawDefaultConsumer(config *Config) (*rawDefaultConsumer, error) {
+	c := &rawDefaultConsumer{
 		dopplerAddr:    config.DopplerAddr,
 		token:          config.Token,
 		subscriptionID: config.SubscriptionID,
 		insecure:       config.Insecure,
 		debugPrinter:   config.DebugPrinter,
 		logger:         config.Logger,
+		idleTimeout:    config.IdleTimeout,
 	}
 
 	if err := c.validate(); err != nil {

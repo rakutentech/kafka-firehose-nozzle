@@ -12,11 +12,11 @@ const (
 	defaultUAATimeout = 30 * time.Second
 )
 
-// TokenFetcher is the interface for fetching access token
+// tokenFetcher is the interface for fetching access token
 // From UAA server. By default, defaultTokenFetcher
 // (which is implemented with https://github.com/cloudfoundry-incubator/uaago)
 // is used
-type TokenFetcher interface {
+type tokenFetcher interface {
 	// Fetch fetches the token from Uaa and return it. If any, returns error.
 	Fetch() (string, error)
 }
