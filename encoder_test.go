@@ -12,9 +12,7 @@ func TestJsonEncoder_Encode(t *testing.T) {
 		timestamp, testAppId)
 	expectLength := 225
 
-	encoder := &JsonEncoder{
-		event: logMessage("hello", testAppId, timestamp),
-	}
+	encoder := toJSON(logMessage("hello", testAppId, timestamp))
 
 	buf, err := encoder.Encode()
 	if err != nil {
