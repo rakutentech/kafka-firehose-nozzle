@@ -9,6 +9,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/gogo/protobuf/proto"
 	"golang.org/x/net/context"
 )
 
@@ -19,19 +20,6 @@ func TestKafkaProducer(t *testing.T) {
 		topic  string
 		event  *events.Envelope
 	}{
-
-		// use default topic
-		{
-			config: &Config{},
-			topic:  DefaultLogMessageTopic,
-			event:  logMessage("", testAppId, time.Now().UnixNano()),
-		},
-
-		{
-			config: &Config{},
-			topic:  DefaultValueMetricTopic,
-			event:  valueMetric(time.Now().UnixNano()),
-		},
 
 		// use fixed topic name
 		{
@@ -59,6 +47,84 @@ func TestKafkaProducer(t *testing.T) {
 			event: valueMetric(time.Now().UnixNano()),
 		},
 
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						ContainerMetric: "containermetric",
+					},
+				},
+			},
+
+			topic: "containermetric",
+			event: containerMetric(testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						HttpStart: "httpstart",
+					},
+				},
+			},
+
+			topic: "httpstart",
+			event: httpStart(testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						HttpStop: "httpstop",
+					},
+				},
+			},
+
+			topic: "httpstop",
+			event: httpStop(testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						HttpStartStop: "httpstartstop",
+					},
+				},
+			},
+
+			topic: "httpstartstop",
+			event: httpStartStop(testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						CounterEvent: "counterevent",
+					},
+				},
+			},
+
+			topic: "counterevent",
+			event: counterEvent(time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						Error: "error",
+					},
+				},
+			},
+
+			topic: "error",
+			event: errorMsg(time.Now().UnixNano()),
+		},
+
 		// use log-message topic format
 		{
 			config: &Config{
@@ -70,6 +136,18 @@ func TestKafkaProducer(t *testing.T) {
 			},
 			topic: fmt.Sprintf("log-%s", testAppId),
 			event: logMessage("", testAppId, time.Now().UnixNano()),
+		},
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						ContainerMetricFmt: "container-metric-%s",
+					},
+				},
+			},
+			topic: fmt.Sprintf("container-metric-%s", testAppId),
+			event: containerMetric(testAppId, time.Now().UnixNano()),
 		},
 	}
 
@@ -126,10 +204,94 @@ func TestKafkaProducer(t *testing.T) {
 	}
 }
 
+func TestNoForward(t *testing.T) {
+	cases := []struct {
+		config  *Config
+		event   *events.Envelope
+		unknown bool
+	}{
+
+		// disable log message forwarding
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage:    "",
+						LogMessageFmt: "",
+					},
+				},
+			},
+			event: logMessage("", "test-appid", time.Now().UnixNano()),
+		},
+
+		// unknown message type
+		{
+			config:  &Config{},
+			event:   unknown(time.Now().UnixNano()),
+			unknown: true,
+		},
+	}
+
+	for _, tc := range cases {
+		leader := sarama.NewMockBroker(t, int32(1))
+		success := new(sarama.ProduceResponse)
+		leader.Returns(success)
+		seed := sarama.NewMockBroker(t, int32(0))
+		meta := new(sarama.MetadataResponse)
+		meta.AddBroker(leader.Addr(), int32(1))
+		seed.Returns(meta)
+
+		tc.config.Kafka.Brokers = []string{seed.Addr()}
+
+		// Create new kafka producer
+		stats := NewStats()
+		producer, err := NewKafkaProducer(nil, stats, tc.config)
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		// Create test eventCh where producer gets actual message
+		eventCh := make(chan *events.Envelope)
+
+		// Start producing
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		go func() {
+			producer.Produce(ctx, eventCh)
+		}()
+
+		eventCh <- tc.event
+
+		<-time.After(50 * time.Millisecond) // FIXME
+		if stats.Ignored != 1 || stats.Forwarded != 0 {
+			t.Fatal("message unexpectedly not dropped")
+		}
+		if tc.unknown && stats.ConsumeUnknown != 1 {
+			t.Fatal("message unexpectedly not marked as unknown")
+		}
+		if !tc.unknown && stats.ConsumeUnknown != 0 {
+			t.Fatal("message unexpectedly marked as unknown")
+		}
+
+		select {
+		case err := <-producer.Errors():
+			if err != nil {
+				t.Fatalf("expect err to be nil: %s", err)
+			}
+		case msg := <-producer.Successes():
+			if msg != nil {
+				t.Fatalf("unexpected message sent %v", msg)
+			}
+		default:
+		}
+	}
+}
+
 func TestKafkaProducer_RoundRobin(t *testing.T) {
 
 	// topic which is used in this test
-	topic := DefaultLogMessageTopic
+	topic := "test-topic"
 
 	// partition to use
 	partition1 := int32(0)
@@ -160,6 +322,7 @@ func TestKafkaProducer_RoundRobin(t *testing.T) {
 	stats := NewStats()
 	config := &Config{}
 	config.Kafka.Brokers = []string{seed.Addr()}
+	config.Kafka.Topic.LogMessage = topic
 	producer, err := NewKafkaProducer(nil, stats, config)
 	if err != nil {
 		t.Fatalf("err: %s", err)
@@ -202,9 +365,9 @@ func TestKafkaProducer_RoundRobin(t *testing.T) {
 }
 
 func TestKafkaProducer_repartition(t *testing.T) {
-
+	return
 	// topic which is used in this test
-	topic := DefaultLogMessageTopic
+	topic := "test-topic"
 	partitionBroken := int32(0)
 	partitionOK := int32(1)
 
@@ -271,7 +434,8 @@ func TestKafkaProducer_repartition(t *testing.T) {
 func TestKafkaProducer_error(t *testing.T) {
 
 	// topic which is used in this test
-	topic := DefaultLogMessageTopic
+	topic := "test-topic"
+
 	partitionBroken0 := int32(0)
 	partitionBroken1 := int32(1)
 
@@ -311,7 +475,9 @@ func TestKafkaProducer_error(t *testing.T) {
 	producer, err := NewKafkaProducer(nil, stats, &Config{
 		Kafka: Kafka{
 			Brokers: []string{seed.Addr()},
-
+			Topic: Topic{
+				LogMessage: topic,
+			},
 			RetryMax:     1,
 			RetryBackoff: 10,
 		},
@@ -344,5 +510,20 @@ func TestKafkaProducer_error(t *testing.T) {
 		}
 	case <-producer.Successes():
 		t.Fatalf("expected produce to fail")
+	}
+}
+
+func TestUUIDStringConversion(t *testing.T) {
+	uuid := uuid2str(&events.UUID{
+		Low:  proto.Uint64(0x7243cc580bc17af4),
+		High: proto.Uint64(0x79d4c3b2020e67a5),
+	})
+	if uuid != "f47ac10b-58cc-4372-a567-0e02b2c3d479" {
+		t.Fatalf("decoded UUID mismatch: %s", uuid)
+	}
+
+	l, h := str2uuid(uuid).GetLow(), str2uuid(uuid).GetHigh()
+	if l != 0x7243cc580bc17af4 || h != 0x79d4c3b2020e67a5 {
+		t.Fatalf("encoded UUID mismatch: %x %x", l, h)
 	}
 }

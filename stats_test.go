@@ -57,10 +57,25 @@ func TestStatsJson(t *testing.T) {
 		s.Dec(SubInputBuffer)
 	}
 
+	for i := 0; i < 100; i++ {
+		s.Inc(Forwarded)
+	}
+
 	expect := `{
   "consume": 100,
   "consume_per_sec": 0,
   "consume_fail": 0,
+  "consume_http_stop": 0,
+  "consume_http_start": 0,
+  "consume_http_start_stop": 0,
+  "consume_value_metric": 0,
+  "consume_counter_event": 0,
+  "consume_log_message": 0,
+  "consume_error": 0,
+  "consume_container_metric": 0,
+  "consume_unknown": 0,
+  "ignored": 0,
+  "forwarded": 100,
   "publish": 50,
   "publish_per_sec": 0,
   "publish_fail": 50,

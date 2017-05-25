@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"sync"
@@ -13,18 +14,6 @@ import (
 )
 
 const (
-	// TopicAppLogTmpl is Kafka topic name template for LogMessage
-	TopicAppLogTmpl = "app-log-%s"
-
-	// TopicCFMetrics is Kafka topic name for ValueMetric
-	TopicCFMetric = "cf-metrics"
-)
-
-const (
-	// Default topic name for each event
-	DefaultValueMetricTopic = "value-metric"
-	DefaultLogMessageTopic  = "log-message"
-
 	DefaultKafkaRepartitionMax = 5
 	DefaultKafkaRetryMax       = 1
 	DefaultKafkaRetryBackoff   = 100 * time.Millisecond
@@ -68,15 +57,6 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		return nil, err
 	}
 
-	kafkaTopic := config.Kafka.Topic
-	if kafkaTopic.LogMessage == "" {
-		kafkaTopic.LogMessage = DefaultLogMessageTopic
-	}
-
-	if kafkaTopic.ValueMetric == "" {
-		kafkaTopic.ValueMetric = DefaultValueMetricTopic
-	}
-
 	repartitionMax := DefaultKafkaRepartitionMax
 	if config.Kafka.RepartitionMax != 0 {
 		repartitionMax = config.Kafka.RepartitionMax
@@ -86,15 +66,25 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 	subInputCh := make(chan *sarama.ProducerMessage, subInputBuffer)
 
 	return &KafkaProducer{
-		AsyncProducer:      asyncProducer,
-		Logger:             logger,
-		Stats:              stats,
-		logMessageTopic:    kafkaTopic.LogMessage,
-		logMessageTopicFmt: kafkaTopic.LogMessageFmt,
-		valueMetricTopic:   kafkaTopic.ValueMetric,
-		repartitionMax:     repartitionMax,
-		subInputCh:         subInputCh,
-		errors:             make(chan *sarama.ProducerError),
+		AsyncProducer:           asyncProducer,
+		Logger:                  logger,
+		Stats:                   stats,
+		logMessageTopic:         config.Kafka.Topic.LogMessage,
+		logMessageTopicFmt:      config.Kafka.Topic.LogMessageFmt,
+		valueMetricTopic:        config.Kafka.Topic.ValueMetric,
+		containerMetricTopic:    config.Kafka.Topic.ContainerMetric,
+		containerMetricTopicFmt: config.Kafka.Topic.ContainerMetricFmt,
+		httpStartTopic:          config.Kafka.Topic.HttpStart,
+		httpStartTopicFmt:       config.Kafka.Topic.HttpStartFmt,
+		httpStopTopic:           config.Kafka.Topic.HttpStop,
+		httpStopTopicFmt:        config.Kafka.Topic.HttpStopFmt,
+		httpStartStopTopic:      config.Kafka.Topic.HttpStartStop,
+		httpStartStopTopicFmt:   config.Kafka.Topic.HttpStartStopFmt,
+		counterEventTopic:       config.Kafka.Topic.CounterEvent,
+		errorTopic:              config.Kafka.Topic.Error,
+		repartitionMax:          repartitionMax,
+		subInputCh:              subInputCh,
+		errors:                  make(chan *sarama.ProducerError),
 	}, nil
 }
 
@@ -108,10 +98,19 @@ type KafkaProducer struct {
 	// SubInputCh is buffer for re-partitioning
 	subInputCh chan *sarama.ProducerMessage
 
-	logMessageTopic    string
-	logMessageTopicFmt string
-
-	valueMetricTopic string
+	logMessageTopic         string
+	logMessageTopicFmt      string
+	valueMetricTopic        string
+	containerMetricTopic    string
+	containerMetricTopicFmt string
+	httpStartTopic          string
+	httpStartTopicFmt       string
+	httpStopTopic           string
+	httpStopTopicFmt        string
+	httpStartStopTopic      string
+	httpStartStopTopicFmt   string
+	counterEventTopic       string
+	errorTopic              string
 
 	Logger *log.Logger
 	Stats  *Stats
@@ -133,16 +132,50 @@ func (kp *KafkaProducer) init() {
 	}
 }
 
-func (kp *KafkaProducer) LogMessageTopic(appID string) string {
-	if kp.logMessageTopicFmt != "" {
-		return fmt.Sprintf(kp.logMessageTopicFmt, appID)
+func fmtTopic(t, tfmt, appID string) string {
+	if tfmt != "" {
+		return fmt.Sprintf(tfmt, appID)
 	}
+	return t
+}
 
-	return kp.logMessageTopic
+func (kp *KafkaProducer) LogMessageTopic(appID string) string {
+	return fmtTopic(kp.logMessageTopic, kp.logMessageTopicFmt, appID)
 }
 
 func (kp *KafkaProducer) ValueMetricTopic() string {
 	return kp.valueMetricTopic
+}
+
+func (kp *KafkaProducer) ContainerMetricTopic(appID string) string {
+	return fmtTopic(kp.containerMetricTopic, kp.containerMetricTopicFmt, appID)
+}
+
+func (kp *KafkaProducer) HttpStartTopic(appID string) string {
+	return fmtTopic(kp.httpStartTopic, kp.httpStartTopicFmt, appID)
+}
+
+func (kp *KafkaProducer) HttpStopTopic(appID string) string {
+	return fmtTopic(kp.httpStopTopic, kp.httpStopTopicFmt, appID)
+}
+
+func (kp *KafkaProducer) HttpStartStopTopic(appID string) string {
+	return fmtTopic(kp.httpStartStopTopic, kp.httpStartStopTopicFmt, appID)
+}
+
+func (kp *KafkaProducer) CounterEventTopic() string {
+	return kp.counterEventTopic
+}
+
+func (kp *KafkaProducer) ErrorTopic() string {
+	return kp.errorTopic
+}
+
+func uuid2str(uuid *events.UUID) string {
+	var buf [16]byte
+	binary.LittleEndian.PutUint64(buf[0:8], uuid.GetLow())
+	binary.LittleEndian.PutUint64(buf[8:16], uuid.GetHigh())
+	return fmt.Sprintf("%x-%x-%x-%x-%x", buf[0:4], buf[4:6], buf[6:8], buf[8:10], buf[10:16])
 }
 
 func (kp *KafkaProducer) Errors() <-chan *sarama.ProducerError {
@@ -230,33 +263,44 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 }
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
+	topic := ""
+
+	kp.Stats.Inc(Consume)
+
 	switch event.GetEventType() {
 	case events.Envelope_HttpStart:
-		// Do nothing
+		topic = kp.HttpStartTopic(uuid2str(event.GetHttpStart().GetApplicationId()))
+		kp.Stats.Inc(ConsumeHttpStart)
 	case events.Envelope_HttpStartStop:
-		// Do nothing
+		topic = kp.HttpStartStopTopic(uuid2str(event.GetHttpStartStop().GetApplicationId()))
+		kp.Stats.Inc(ConsumeHttpStartStop)
 	case events.Envelope_HttpStop:
-		// Do nothing
+		topic = kp.HttpStopTopic(uuid2str(event.GetHttpStart().GetApplicationId()))
+		kp.Stats.Inc(ConsumeHttpStop)
 	case events.Envelope_LogMessage:
-		kp.Stats.Inc(Consume)
-		appID := event.GetLogMessage().GetAppId()
-		kp.Input() <- &sarama.ProducerMessage{
-			Topic:    kp.LogMessageTopic(appID),
-			Value:    &JsonEncoder{event: event},
-			Metadata: metadata{retries: 0},
-		}
+		topic = kp.LogMessageTopic(event.GetLogMessage().GetAppId())
+		kp.Stats.Inc(ConsumeLogMessage)
 	case events.Envelope_ValueMetric:
-		kp.Stats.Inc(Consume)
-		kp.Input() <- &sarama.ProducerMessage{
-			Topic:    kp.ValueMetricTopic(),
-			Value:    &JsonEncoder{event: event},
-			Metadata: metadata{retries: 0},
-		}
+		topic = kp.ValueMetricTopic()
+		kp.Stats.Inc(ConsumeValueMetric)
 	case events.Envelope_CounterEvent:
-		// Do nothing
+		topic = kp.CounterEventTopic()
+		kp.Stats.Inc(ConsumeCounterEvent)
 	case events.Envelope_Error:
-		// Do nothing
+		topic = kp.ErrorTopic()
+		kp.Stats.Inc(ConsumeError)
 	case events.Envelope_ContainerMetric:
-		// Do nothing
+		topic = kp.ContainerMetricTopic(event.GetContainerMetric().GetApplicationId())
+		kp.Stats.Inc(ConsumeContainerMetric)
+	default:
+		kp.Stats.Inc(ConsumeUnknown)
 	}
+
+	if topic == "" {
+		kp.Stats.Inc(Ignored)
+		return
+	}
+	kp.Stats.Inc(Forwarded)
+
+	kp.Input() <- &sarama.ProducerMessage{Topic: topic, Value: toJSON(event), Metadata: metadata{retries: 0}}
 }
