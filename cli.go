@@ -210,7 +210,7 @@ func (cli *CLI) Run(args []string) int {
 		logger.Printf("[ERROR] Failed to start nozzle consumer: %s", err)
 		return ExitCodeError
 	}
-		
+
 	// Setup nozzle producer
 	var producer NozzleProducer
 	if debug {
@@ -234,22 +234,8 @@ func (cli *CLI) Run(args []string) int {
 		logger.Printf("[INFO] Stats display interval: %s", statsInterval)
 		ticker := time.NewTicker(statsInterval)
 		for {
-			select {
-			case <-ticker.C:
-				logger.Printf("[INFO] Consume per sec: %d", stats.ConsumePerSec)
-				logger.Printf("[INFO] Consumed messages: %d", stats.Consume)
-
-				logger.Printf("[INFO] Publish per sec: %d", stats.PublishPerSec)
-				logger.Printf("[INFO] Published messages: %d", stats.Publish)
-
-				logger.Printf("[INFO] Publish delay: %d", stats.Consume-stats.Publish-stats.PublishFail)
-
-				logger.Printf("[INFO] SubInput buffer: %d", stats.SubInputBuffer)
-
-				logger.Printf("[INFO] Failed consume: %d", stats.ConsumeFail)
-				logger.Printf("[INFO] Failed publish: %d", stats.PublishFail)
-				logger.Printf("[INFO] SlowConsumer alerts: %d", stats.SlowConsumerAlert)
-			}
+			<-ticker.C
+			logger.Printf("[INFO] Stats: %+v", stats)
 		}
 	}()
 
@@ -400,12 +386,12 @@ Usage:
 
 Available options:
 
-    -config PATH          Path to configuraiton file    
+    -config PATH          Path to configuraiton file
     -username NAME        username to grant access token to connect firehose
     -password PASS        password to grant access token to connect firehose
     -worker NUM           Number of producer worker. Default is number of CPU core
     -subscription ID      Subscription ID for firehose. Default is 'kafka-firehose-nozzle'
-    -stats-interval TIME  How often display stats info to console  
+    -stats-interval TIME  How often display stats info to console
     -debug                Output event to stdout instead of producing message to kafka
     -log-level LEVEL      Log level. Default level is INFO (DEBUG|INFO|ERROR)
 `
