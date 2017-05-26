@@ -263,22 +263,26 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 }
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
-	topic := ""
+	topic, appGuid := "", ""
 
 	kp.Stats.Inc(Consume)
 
 	switch event.GetEventType() {
 	case events.Envelope_HttpStart:
-		topic = kp.HttpStartTopic(uuid2str(event.GetHttpStart().GetApplicationId()))
+		appGuid = uuid2str(event.GetHttpStart().GetApplicationId())
+		topic = kp.HttpStartTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStart)
 	case events.Envelope_HttpStartStop:
-		topic = kp.HttpStartStopTopic(uuid2str(event.GetHttpStartStop().GetApplicationId()))
+		appGuid = uuid2str(event.GetHttpStartStop().GetApplicationId())
+		topic = kp.HttpStartStopTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStartStop)
 	case events.Envelope_HttpStop:
-		topic = kp.HttpStopTopic(uuid2str(event.GetHttpStart().GetApplicationId()))
+		appGuid = uuid2str(event.GetHttpStart().GetApplicationId())
+		topic = kp.HttpStopTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStop)
 	case events.Envelope_LogMessage:
-		topic = kp.LogMessageTopic(event.GetLogMessage().GetAppId())
+		appGuid = event.GetLogMessage().GetAppId()
+		topic = kp.LogMessageTopic(appGuid)
 		kp.Stats.Inc(ConsumeLogMessage)
 	case events.Envelope_ValueMetric:
 		topic = kp.ValueMetricTopic()
@@ -290,7 +294,8 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 		topic = kp.ErrorTopic()
 		kp.Stats.Inc(ConsumeError)
 	case events.Envelope_ContainerMetric:
-		topic = kp.ContainerMetricTopic(event.GetContainerMetric().GetApplicationId())
+		appGuid = event.GetContainerMetric().GetApplicationId()
+		topic = kp.ContainerMetricTopic(appGuid)
 		kp.Stats.Inc(ConsumeContainerMetric)
 	default:
 		kp.Stats.Inc(ConsumeUnknown)
@@ -302,5 +307,9 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	}
 	kp.Stats.Inc(Forwarded)
 
-	kp.Input() <- &sarama.ProducerMessage{Topic: topic, Value: toJSON(event), Metadata: metadata{retries: 0}}
+	kp.Input() <- &sarama.ProducerMessage{
+		Topic:    topic,
+		Value:    toJSON(enrich(event, appGuid)),
+		Metadata: metadata{retries: 0},
+	}
 }
