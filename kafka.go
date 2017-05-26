@@ -47,6 +47,11 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	producerConfig.ChannelBufferSize = DefaultChannelBufferSize
 
+	if config.Kafka.FlushFrequency != 0 {
+		frequency := time.Duration(config.Kafka.FlushFrequency) * time.Millisecond
+		producerConfig.Producer.Flush.Frequency = frequency
+	}
+
 	brokers := config.Kafka.Brokers
 	if len(brokers) < 1 {
 		return nil, fmt.Errorf("brokers are not provided")

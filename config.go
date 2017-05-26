@@ -40,6 +40,7 @@ type Kafka struct {
 	RetryMax       int `toml:"retry_max"`
 	RetryBackoff   int `toml:"retry_backoff_ms"`
 	RepartitionMax int `toml:"repartition_max"`
+	FlushFrequency int `toml:"flush_frequency_ms"` // sarama.Config.Producer.Flush.Frequency
 }
 
 type Topic struct {

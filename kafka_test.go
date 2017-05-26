@@ -515,6 +515,96 @@ func TestKafkaProducer_error(t *testing.T) {
 	}
 }
 
+func TestProducerFrequency(t *testing.T) {
+	cases := []struct {
+		config *Config
+		event  *events.Envelope
+	}{
+
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "test-topic",
+					},
+					FlushFrequency: 0,
+				},
+			},
+			event: logMessage("", "test-appid", time.Now().UnixNano()),
+		},
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "test-topic",
+					},
+					FlushFrequency: 200,
+				},
+			},
+			event: logMessage("", "test-appid", time.Now().UnixNano()),
+		},
+	}
+
+	for _, tc := range cases {
+		leader := sarama.NewMockBroker(t, int32(1))
+		success := new(sarama.ProduceResponse)
+		success.AddTopicPartition(tc.config.Kafka.Topic.LogMessage, int32(0), sarama.ErrNoError)
+		leader.Returns(success)
+
+		meta := new(sarama.MetadataResponse)
+		meta.AddTopicPartition(tc.config.Kafka.Topic.LogMessage, int32(0), leader.BrokerID(), nil, nil, sarama.ErrNoError)
+		meta.AddBroker(leader.Addr(), int32(1))
+
+		seed := sarama.NewMockBroker(t, int32(0))
+		seed.Returns(meta)
+
+		tc.config.Kafka.Brokers = []string{seed.Addr()}
+
+		// Create new kafka producer
+		stats := NewStats()
+		producer, err := NewKafkaProducer(nil, stats, tc.config)
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		// Create test eventCh where producer gets actual message
+		eventCh := make(chan *events.Envelope)
+
+		// Start producing
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		go func() {
+			producer.Produce(ctx, eventCh)
+		}()
+
+		eventCh <- tc.event
+
+		select {
+		case err := <-producer.Errors():
+			if err != nil {
+				t.Fatalf("message sent too early: expect err to be nil: %s", err)
+			}
+		case msg := <-producer.Successes():
+			if msg != nil {
+				t.Fatalf("message sent too early: %v", msg)
+			}
+
+		case <-time.After(time.Duration(tc.config.Kafka.FlushFrequency) * time.Millisecond):
+			select {
+			case err := <-producer.Errors():
+				if err != nil {
+					t.Fatalf("expect err to be nil: %s", err)
+				}
+			case <-producer.Successes():
+				// success
+			case <-time.After(time.Second):
+				t.Fatalf("timeout %+v %+v", tc.config, tc.event)
+			}
+		}
+	}
+}
+
 func TestUUIDStringConversion(t *testing.T) {
 	uuid := uuid2str(&events.UUID{
 		Low:  proto.Uint64(0x7243cc580bc17af4),
