@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -269,39 +270,59 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 
 func (kp *KafkaProducer) input(event *events.Envelope) {
 	topic, appGuid := "", ""
+	instanceIdx := 0
 
 	kp.Stats.Inc(Consume)
 
 	switch event.GetEventType() {
-	case events.Envelope_HttpStart:
+	case events.Envelope_HttpStart: // deprecated
 		appGuid = uuid2str(event.GetHttpStart().GetApplicationId())
+		instanceIdx = int(event.GetHttpStart().GetInstanceIndex())
 		topic = kp.HttpStartTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStart)
+
 	case events.Envelope_HttpStartStop:
 		appGuid = uuid2str(event.GetHttpStartStop().GetApplicationId())
+		instanceIdx = int(event.GetHttpStartStop().GetInstanceIndex())
 		topic = kp.HttpStartStopTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStartStop)
-	case events.Envelope_HttpStop:
-		appGuid = uuid2str(event.GetHttpStart().GetApplicationId())
+
+	case events.Envelope_HttpStop: // deprecated
+		appGuid = uuid2str(event.GetHttpStop().GetApplicationId())
 		topic = kp.HttpStopTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStop)
+
 	case events.Envelope_LogMessage:
 		appGuid = event.GetLogMessage().GetAppId()
+		switch event.GetLogMessage().GetSourceType() {
+		case "App":
+			instanceIdx, _ = strconv.Atoi(event.GetLogMessage().GetSourceInstance())
+		case "APP":
+			instanceIdx, _ = strconv.Atoi(event.GetLogMessage().GetSourceInstance())
+		case "RTR":
+			instanceIdx = 0
+		}
 		topic = kp.LogMessageTopic(appGuid)
 		kp.Stats.Inc(ConsumeLogMessage)
+
 	case events.Envelope_ValueMetric:
 		topic = kp.ValueMetricTopic()
 		kp.Stats.Inc(ConsumeValueMetric)
+
 	case events.Envelope_CounterEvent:
 		topic = kp.CounterEventTopic()
 		kp.Stats.Inc(ConsumeCounterEvent)
+
 	case events.Envelope_Error:
 		topic = kp.ErrorTopic()
 		kp.Stats.Inc(ConsumeError)
+
 	case events.Envelope_ContainerMetric:
 		appGuid = event.GetContainerMetric().GetApplicationId()
+		instanceIdx = int(event.GetContainerMetric().GetInstanceIndex())
 		topic = kp.ContainerMetricTopic(appGuid)
 		kp.Stats.Inc(ConsumeContainerMetric)
+
 	default:
 		kp.Stats.Inc(ConsumeUnknown)
 	}
@@ -312,9 +333,11 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	}
 	kp.Stats.Inc(Forwarded)
 
+	eventExt := enrich(event, appGuid, instanceIdx)
+
 	kp.Input() <- &sarama.ProducerMessage{
 		Topic:    topic,
-		Value:    toJSON(enrich(event, appGuid)),
+		Value:    toJSON(eventExt),
 		Metadata: metadata{retries: 0},
 	}
 }
