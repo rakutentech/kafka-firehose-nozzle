@@ -85,6 +85,18 @@
 			"Rev": "19b0b332c9e4516a6370a0456e6182c3b5036720"
 		},
 		{
+			"ImportPath": "github.com/pquerna/ffjson/ffjson",
+			"Rev": "0a1032732ea92f86ab22e27b9d55cd182f2f4a1b"
+		},
+		{
+			"ImportPath": "github.com/pquerna/ffjson/fflib/v1",
+			"Rev": "0a1032732ea92f86ab22e27b9d55cd182f2f4a1b"
+		},
+		{
+			"ImportPath": "github.com/pquerna/ffjson/fflib/v1/internal",
+			"Rev": "0a1032732ea92f86ab22e27b9d55cd182f2f4a1b"
+		},
+		{
 			"ImportPath": "github.com/rakutentech/go-nozzle",
 			"Rev": "5ea7d8dd3be1bceb05513fcff0a5cba6e806d706"
 		},
