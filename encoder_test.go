@@ -29,11 +29,12 @@ func TestJsonEncoder_Encode_NoExtraContent(t *testing.T) {
 
 func TestJsonEncoder_Encode_ExtraContent(t *testing.T) {
 	timestamp := int64(1461318380946558204)
+	instanceIdx := 2
 	expect := fmt.Sprintf(
-		`{ "origin":"fake-origin-1","eventType":5,"timestamp":%d,"logMessage":{ "message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%[2]s","source_type":"DEA"},"app_guid":"%[2]s","instance_idx":1}`,
-		timestamp, testAppId)
+		`{ "origin":"fake-origin-1","eventType":5,"timestamp":%[1]d,"logMessage":{ "message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%[2]s","source_type":"DEA"},"app_guid":"%[2]s","instance_idx":%[3]d}`,
+		timestamp, testAppId, instanceIdx)
 
-	encoder := toJSON(enrich(logMessage("hello", testAppId, timestamp), testAppId, 1))
+	encoder := toJSON(enrich(logMessage("hello", testAppId, timestamp), testAppId, instanceIdx))
 
 	buf, err := encoder.Encode()
 	if err != nil {
