@@ -11,7 +11,7 @@ func TestJsonEncoder_Encode_NoExtraContent(t *testing.T) {
 		`{ "origin":"fake-origin-1","eventType":5,"timestamp":%d,"logMessage":{ "message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%[2]s","source_type":"DEA"}}`,
 		timestamp, testAppId)
 
-	encoder := toJSON(enrich(logMessage("hello", testAppId, timestamp), "", 0))
+	encoder := extEnvelopeJSON(enrich(logMessage("hello", testAppId, timestamp), "", 0))
 
 	buf, err := encoder.Encode()
 	if err != nil {
@@ -34,7 +34,7 @@ func TestJsonEncoder_Encode_ExtraContent(t *testing.T) {
 		`{ "origin":"fake-origin-1","eventType":5,"timestamp":%[1]d,"logMessage":{ "message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%[2]s","source_type":"DEA"},"app_guid":"%[2]s","instance_idx":%[3]d}`,
 		timestamp, testAppId, instanceIdx)
 
-	encoder := toJSON(enrich(logMessage("hello", testAppId, timestamp), testAppId, instanceIdx))
+	encoder := extEnvelopeJSON(enrich(logMessage("hello", testAppId, timestamp), testAppId, instanceIdx))
 
 	buf, err := encoder.Encode()
 	if err != nil {

@@ -46,6 +46,7 @@ generate:
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/http.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/log.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/metric.pb.go
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/envelope.pb.go
 	rm -rf ./ext/*ffjson*
 	go generate ./ext
 	go generate

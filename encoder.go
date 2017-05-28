@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/pquerna/ffjson/ffjson"
 	"github.com/rakutentech/kafka-firehose-nozzle/ext"
 )
@@ -12,7 +13,12 @@ type JsonEncoder struct {
 	err     error
 }
 
-func toJSON(e *ext.Envelope) *JsonEncoder {
+func extEnvelopeJSON(e *ext.Envelope) *JsonEncoder {
+	encoded, err := ffjson.Marshal(e)
+	return &JsonEncoder{encoded, err}
+}
+
+func eventsEnvelopeJSON(e *events.Envelope) *JsonEncoder {
 	encoded, err := ffjson.Marshal(e)
 	return &JsonEncoder{encoded, err}
 }

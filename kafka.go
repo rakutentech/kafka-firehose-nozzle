@@ -333,11 +333,19 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	}
 	kp.Stats.Inc(Forwarded)
 
-	eventExt := enrich(event, appGuid, instanceIdx)
+	if true {
+		eventExt := enrich(event, appGuid, instanceIdx)
 
-	kp.Input() <- &sarama.ProducerMessage{
-		Topic:    topic,
-		Value:    toJSON(eventExt),
-		Metadata: metadata{retries: 0},
+		kp.Input() <- &sarama.ProducerMessage{
+			Topic:    topic,
+			Value:    extEnvelopeJSON(eventExt),
+			Metadata: metadata{retries: 0},
+		}
+	} else {
+		kp.Input() <- &sarama.ProducerMessage{
+			Topic:    topic,
+			Value:    eventsEnvelopeJSON(event),
+			Metadata: metadata{retries: 0},
+		}
 	}
 }
