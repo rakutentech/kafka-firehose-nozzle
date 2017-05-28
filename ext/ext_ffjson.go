@@ -86,88 +86,120 @@ func (mj *Envelope) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.HttpStart != nil {
 		if true {
-			/* Struct fall back. type=events.HttpStart kind=struct */
 			buf.WriteString(`"httpStart":`)
-			err = buf.Encode(mj.HttpStart)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.HttpStart.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.HttpStop != nil {
 		if true {
-			/* Struct fall back. type=events.HttpStop kind=struct */
 			buf.WriteString(`"httpStop":`)
-			err = buf.Encode(mj.HttpStop)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.HttpStop.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.HttpStartStop != nil {
 		if true {
-			/* Struct fall back. type=events.HttpStartStop kind=struct */
 			buf.WriteString(`"httpStartStop":`)
-			err = buf.Encode(mj.HttpStartStop)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.HttpStartStop.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.LogMessage != nil {
 		if true {
-			/* Struct fall back. type=events.LogMessage kind=struct */
 			buf.WriteString(`"logMessage":`)
-			err = buf.Encode(mj.LogMessage)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.LogMessage.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.ValueMetric != nil {
 		if true {
-			/* Struct fall back. type=events.ValueMetric kind=struct */
 			buf.WriteString(`"valueMetric":`)
-			err = buf.Encode(mj.ValueMetric)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ValueMetric.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.CounterEvent != nil {
 		if true {
-			/* Struct fall back. type=events.CounterEvent kind=struct */
 			buf.WriteString(`"counterEvent":`)
-			err = buf.Encode(mj.CounterEvent)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.CounterEvent.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.Error != nil {
 		if true {
-			/* Struct fall back. type=events.Error kind=struct */
 			buf.WriteString(`"error":`)
-			err = buf.Encode(mj.Error)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.Error.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.ContainerMetric != nil {
 		if true {
-			/* Struct fall back. type=events.ContainerMetric kind=struct */
 			buf.WriteString(`"containerMetric":`)
-			err = buf.Encode(mj.ContainerMetric)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ContainerMetric.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}

@@ -1,3 +1,5 @@
+SHELL:=/bin/bash
+
 default: test
 
 updatedeps:
@@ -8,7 +10,7 @@ updatedeps:
 deps:
 	go get -v github.com/tools/godep
 
-build: deps 
+build: deps
 	godep go build -o bin/kafka-firehose-nozzle
 
 test: deps
@@ -32,11 +34,18 @@ lint:
 
 # cover shows test coverages
 cover:
-	@go get golang.org/x/tools/cmd/cover		
+	@go get golang.org/x/tools/cmd/cover
 	godep go test -coverprofile=cover.out
 	go tool cover -html cover.out
 	rm cover.out
 
 generate:
-	go generate
+	rm -rf ./vendor/github.com/cloudfoundry/sonde-go/events/*ffjson*
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/error.pb.go
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/http.pb.go
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/log.pb.go
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/metric.pb.go
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/uuid.pb.go
+	rm -rf ./ext/*ffjson*
 	go generate ./ext
+	go generate
