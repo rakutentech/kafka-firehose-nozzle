@@ -41,11 +41,11 @@ cover:
 
 generate:
 	rm -rf ./vendor/github.com/cloudfoundry/sonde-go/events/*ffjson*
+	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/uuid.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/error.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/http.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/log.pb.go
 	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/metric.pb.go
-	ffjson -nodecoder -import-name=github.com/cloudfoundry/sonde-go/events ./vendor/github.com/cloudfoundry/sonde-go/events/uuid.pb.go
 	rm -rf ./ext/*ffjson*
 	go generate ./ext
 	go generate

@@ -40,11 +40,15 @@ func (mj *HttpStart) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.RequestId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"requestId":`)
-			err = buf.Encode(mj.RequestId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.RequestId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
@@ -86,22 +90,30 @@ func (mj *HttpStart) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.ParentRequestId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"parentRequestId":`)
-			err = buf.Encode(mj.ParentRequestId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ParentRequestId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
 	}
 	if mj.ApplicationId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"applicationId":`)
-			err = buf.Encode(mj.ApplicationId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ApplicationId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
@@ -163,11 +175,15 @@ func (mj *HttpStartStop) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.RequestId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"requestId":`)
-			err = buf.Encode(mj.RequestId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.RequestId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
@@ -223,11 +239,15 @@ func (mj *HttpStartStop) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.ApplicationId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"applicationId":`)
-			err = buf.Encode(mj.ApplicationId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ApplicationId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
@@ -289,11 +309,15 @@ func (mj *HttpStop) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.RequestId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"requestId":`)
-			err = buf.Encode(mj.RequestId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.RequestId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
@@ -321,11 +345,15 @@ func (mj *HttpStop) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 	}
 	if mj.ApplicationId != nil {
 		if true {
-			/* Struct fall back. type=events.UUID kind=struct */
 			buf.WriteString(`"applicationId":`)
-			err = buf.Encode(mj.ApplicationId)
-			if err != nil {
-				return err
+
+			{
+
+				err = mj.ApplicationId.MarshalJSONBuf(buf)
+				if err != nil {
+					return err
+				}
+
 			}
 			buf.WriteByte(',')
 		}
