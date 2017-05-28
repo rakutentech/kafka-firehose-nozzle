@@ -1,7 +1,8 @@
 package main
 
 import (
-	"encoding/json"
+	"github.com/pquerna/ffjson/ffjson"
+	"github.com/rakutentech/kafka-firehose-nozzle/ext"
 )
 
 // JsonEncoder is implemtented sarama.Encoder interface.
@@ -11,8 +12,8 @@ type JsonEncoder struct {
 	err     error
 }
 
-func toJSON(e *Envelope) *JsonEncoder {
-	encoded, err := json.Marshal(e)
+func toJSON(e *ext.Envelope) *JsonEncoder {
+	encoded, err := ffjson.Marshal(e)
 	return &JsonEncoder{encoded, err}
 }
 
@@ -24,4 +25,11 @@ func (j *JsonEncoder) Encode() ([]byte, error) {
 // Length returns length json encoded data.
 func (j JsonEncoder) Length() int {
 	return len(j.encoded)
+}
+
+func (j JsonEncoder) Recycle() {
+	if j.encoded != nil {
+		ffjson.Pool(j.encoded)
+		j.encoded = nil
+	}
 }

@@ -39,3 +39,4 @@ cover:
 
 generate:
 	go generate
+	go generate ./ext

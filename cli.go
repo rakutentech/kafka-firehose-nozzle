@@ -285,8 +285,9 @@ func (cli *CLI) Run(args []string) int {
 	// Now we don't use this. But in future, it hould be used
 	// for monitoring
 	go func() {
-		for _ = range producer.Successes() {
+		for msg := range producer.Successes() {
 			stats.Inc(Publish)
+			msg.Value.(*JsonEncoder).Recycle() // FIXME(carlo): this should be moved to kafka.go
 		}
 	}()
 
@@ -299,6 +300,7 @@ func (cli *CLI) Run(args []string) int {
 		for err := range producer.Errors() {
 			logger.Printf("[ERROR] Faield to produce logs: %s", err)
 			stats.Inc(PublishFail)
+			err.Msg.Value.(*JsonEncoder).Recycle() // FIXME(carlo): this should be moved to kafka.go
 		}
 	}()
 
