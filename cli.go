@@ -298,7 +298,6 @@ func (cli *CLI) Run(args []string) int {
 		defer cancel()
 
 		for err := range producer.Errors() {
-			logger.Printf("[ERROR] Faield to produce logs: %s", err)
 			stats.Inc(PublishFail)
 			err.Msg.Value.(*JsonEncoder).Recycle() // FIXME(carlo): this should be moved to kafka.go
 		}
