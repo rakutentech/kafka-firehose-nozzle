@@ -33,9 +33,9 @@ const (
 	Ignored                                 // messages dropped because of no forwarding rule
 	Forwarded                               // messages enqueued to be sent to kafka
 	Publish                                 // messages succesfully sent to kafka
-	PublishFail                             // messages that couldn't be sent to kafka?
+	PublishFail                             // messages that couldn't be sent to kafka
 	SlowConsumerAlert                       // slow consumer alerts emitted by noaa?
-	SubInputBuffer
+	SubInputBuffer                          // messages in the SubInputBuffer (retry buffer)
 )
 
 // Stats stores various stats infomation
