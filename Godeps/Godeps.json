@@ -28,6 +28,11 @@
 			"Rev": "ea8759ba3628ce69b0c332ccea75ac6e373a938b"
 		},
 		{
+			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
+			"Comment": "v2.0.0-14-gea8759b",
+			"Rev": "ea8759ba3628ce69b0c332ccea75ac6e373a938b"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry/noaa/errors",
 			"Comment": "v2.0.0-14-gea8759b",
 			"Rev": "ea8759ba3628ce69b0c332ccea75ac6e373a938b"
@@ -117,15 +122,6 @@
 		{
 			"ImportPath": "github.com/rcrowley/go-metrics",
 			"Rev": "1f30fe9094a513ce4c700b9a54458bbb0c96996c"
-		},
-		{
-			"ImportPath": "golang.org/x/net/context",
-			"Rev": "48359f4f600b3a2d5cf657458e3f940021631a56"
-		},
-		{
-			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
-			"Comment": "v2.0.0-14-gea8759b",
-			"Rev": "ea8759ba3628ce69b0c332ccea75ac6e373a938b"
 		}
 	]
 }

@@ -13,9 +13,10 @@ import (
 	"text/template"
 	"time"
 
+	"context"
+
 	"github.com/hashicorp/logutils"
 	"github.com/rakutentech/go-nozzle"
-	"golang.org/x/net/context"
 )
 
 //go:generate ./bin/kafka-firehose-nozzle -gen-godoc

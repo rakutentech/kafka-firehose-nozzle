@@ -7,8 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/cloudfoundry/sonde-go/events"
-	"golang.org/x/net/context"
 )
 
 func TestLogProducer_implement(t *testing.T) {

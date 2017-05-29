@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
+	"context"
+
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 func TestKafkaProducer(t *testing.T) {

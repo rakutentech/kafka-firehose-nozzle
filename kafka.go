@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"

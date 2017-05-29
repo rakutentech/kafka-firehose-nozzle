@@ -6,9 +6,10 @@ import (
 	"log"
 	"sync"
 
+	"context"
+
 	"github.com/Shopify/sarama"
 	"github.com/cloudfoundry/sonde-go/events"
-	"golang.org/x/net/context"
 )
 
 type NozzleProducer interface {
