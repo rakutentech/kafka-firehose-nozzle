@@ -84,35 +84,21 @@ func (mj *Envelope) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 			buf.WriteByte(',')
 		}
 	}
-	if mj.HttpStart != nil {
-		if true {
-			buf.WriteString(`"httpStart":`)
-
-			{
-
-				err = mj.HttpStart.MarshalJSONBuf(buf)
-				if err != nil {
-					return err
-				}
-
+	if len(mj.Tags) != 0 {
+		if mj.Tags == nil {
+			buf.WriteString(`"tags":null`)
+		} else {
+			buf.WriteString(`"tags":{ `)
+			for key, value := range mj.Tags {
+				fflib.WriteJsonString(buf, key)
+				buf.WriteString(`:`)
+				fflib.WriteJsonString(buf, string(value))
+				buf.WriteByte(',')
 			}
-			buf.WriteByte(',')
+			buf.Rewind(1)
+			buf.WriteByte('}')
 		}
-	}
-	if mj.HttpStop != nil {
-		if true {
-			buf.WriteString(`"httpStop":`)
-
-			{
-
-				err = mj.HttpStop.MarshalJSONBuf(buf)
-				if err != nil {
-					return err
-				}
-
-			}
-			buf.WriteByte(',')
-		}
+		buf.WriteByte(',')
 	}
 	if mj.HttpStartStop != nil {
 		if true {
@@ -267,9 +253,7 @@ const (
 
 	ffj_t_Envelope_Ip
 
-	ffj_t_Envelope_HttpStart
-
-	ffj_t_Envelope_HttpStop
+	ffj_t_Envelope_Tags
 
 	ffj_t_Envelope_HttpStartStop
 
@@ -314,9 +298,7 @@ var ffj_key_Envelope_Index = []byte("index")
 
 var ffj_key_Envelope_Ip = []byte("ip")
 
-var ffj_key_Envelope_HttpStart = []byte("httpStart")
-
-var ffj_key_Envelope_HttpStop = []byte("httpStop")
+var ffj_key_Envelope_Tags = []byte("tags")
 
 var ffj_key_Envelope_HttpStartStop = []byte("httpStartStop")
 
@@ -454,17 +436,7 @@ mainparse:
 
 				case 'h':
 
-					if bytes.Equal(ffj_key_Envelope_HttpStart, kn) {
-						currentKey = ffj_t_Envelope_HttpStart
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffj_key_Envelope_HttpStop, kn) {
-						currentKey = ffj_t_Envelope_HttpStop
-						state = fflib.FFParse_want_colon
-						goto mainparse
-
-					} else if bytes.Equal(ffj_key_Envelope_HttpStartStop, kn) {
+					if bytes.Equal(ffj_key_Envelope_HttpStartStop, kn) {
 						currentKey = ffj_t_Envelope_HttpStartStop
 						state = fflib.FFParse_want_colon
 						goto mainparse
@@ -544,6 +516,11 @@ mainparse:
 
 					if bytes.Equal(ffj_key_Envelope_Timestamp, kn) {
 						currentKey = ffj_t_Envelope_Timestamp
+						state = fflib.FFParse_want_colon
+						goto mainparse
+
+					} else if bytes.Equal(ffj_key_Envelope_Tags, kn) {
+						currentKey = ffj_t_Envelope_Tags
 						state = fflib.FFParse_want_colon
 						goto mainparse
 					}
@@ -642,14 +619,8 @@ mainparse:
 					goto mainparse
 				}
 
-				if fflib.EqualFoldRight(ffj_key_Envelope_HttpStop, kn) {
-					currentKey = ffj_t_Envelope_HttpStop
-					state = fflib.FFParse_want_colon
-					goto mainparse
-				}
-
-				if fflib.EqualFoldRight(ffj_key_Envelope_HttpStart, kn) {
-					currentKey = ffj_t_Envelope_HttpStart
+				if fflib.EqualFoldRight(ffj_key_Envelope_Tags, kn) {
+					currentKey = ffj_t_Envelope_Tags
 					state = fflib.FFParse_want_colon
 					goto mainparse
 				}
@@ -734,11 +705,8 @@ mainparse:
 				case ffj_t_Envelope_Ip:
 					goto handle_Ip
 
-				case ffj_t_Envelope_HttpStart:
-					goto handle_HttpStart
-
-				case ffj_t_Envelope_HttpStop:
-					goto handle_HttpStop
+				case ffj_t_Envelope_Tags:
+					goto handle_Tags
 
 				case ffj_t_Envelope_HttpStartStop:
 					goto handle_HttpStartStop
@@ -1011,40 +979,105 @@ handle_Ip:
 	state = fflib.FFParse_after_value
 	goto mainparse
 
-handle_HttpStart:
+handle_Tags:
 
-	/* handler: uj.HttpStart type=events.HttpStart kind=struct quoted=false*/
-
-	{
-		/* Falling back. type=events.HttpStart kind=struct */
-		tbuf, err := fs.CaptureField(tok)
-		if err != nil {
-			return fs.WrapErr(err)
-		}
-
-		err = json.Unmarshal(tbuf, &uj.HttpStart)
-		if err != nil {
-			return fs.WrapErr(err)
-		}
-	}
-
-	state = fflib.FFParse_after_value
-	goto mainparse
-
-handle_HttpStop:
-
-	/* handler: uj.HttpStop type=events.HttpStop kind=struct quoted=false*/
+	/* handler: uj.Tags type=map[string]string kind=map quoted=false*/
 
 	{
-		/* Falling back. type=events.HttpStop kind=struct */
-		tbuf, err := fs.CaptureField(tok)
-		if err != nil {
-			return fs.WrapErr(err)
+
+		{
+			if tok != fflib.FFTok_left_bracket && tok != fflib.FFTok_null {
+				return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for ", tok))
+			}
 		}
 
-		err = json.Unmarshal(tbuf, &uj.HttpStop)
-		if err != nil {
-			return fs.WrapErr(err)
+		if tok == fflib.FFTok_null {
+			uj.Tags = nil
+		} else {
+
+			uj.Tags = make(map[string]string, 0)
+
+			wantVal := true
+
+			for {
+
+				var k string
+
+				var tmp_uj__Tags string
+
+				tok = fs.Scan()
+				if tok == fflib.FFTok_error {
+					goto tokerror
+				}
+				if tok == fflib.FFTok_right_bracket {
+					break
+				}
+
+				if tok == fflib.FFTok_comma {
+					if wantVal == true {
+						// TODO(pquerna): this isn't an ideal error message, this handles
+						// things like [,,,] as an array value.
+						return fs.WrapErr(fmt.Errorf("wanted value token, but got token: %v", tok))
+					}
+					continue
+				} else {
+					wantVal = true
+				}
+
+				/* handler: k type=string kind=string quoted=false*/
+
+				{
+
+					{
+						if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+							return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+						}
+					}
+
+					if tok == fflib.FFTok_null {
+
+					} else {
+
+						outBuf := fs.Output.Bytes()
+
+						k = string(string(outBuf))
+
+					}
+				}
+
+				// Expect ':' after key
+				tok = fs.Scan()
+				if tok != fflib.FFTok_colon {
+					return fs.WrapErr(fmt.Errorf("wanted colon token, but got token: %v", tok))
+				}
+
+				tok = fs.Scan()
+				/* handler: tmp_uj__Tags type=string kind=string quoted=false*/
+
+				{
+
+					{
+						if tok != fflib.FFTok_string && tok != fflib.FFTok_null {
+							return fs.WrapErr(fmt.Errorf("cannot unmarshal %s into Go value for string", tok))
+						}
+					}
+
+					if tok == fflib.FFTok_null {
+
+					} else {
+
+						outBuf := fs.Output.Bytes()
+
+						tmp_uj__Tags = string(string(outBuf))
+
+					}
+				}
+
+				uj.Tags[k] = tmp_uj__Tags
+
+				wantVal = false
+			}
+
 		}
 	}
 

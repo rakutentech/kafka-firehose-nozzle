@@ -64,32 +64,6 @@ func TestKafkaProducer(t *testing.T) {
 			config: &Config{
 				Kafka: Kafka{
 					Topic: Topic{
-						HttpStart: "httpstart",
-					},
-				},
-			},
-
-			topic: "httpstart",
-			event: httpStart(testAppId, time.Now().UnixNano()),
-		},
-
-		{
-			config: &Config{
-				Kafka: Kafka{
-					Topic: Topic{
-						HttpStop: "httpstop",
-					},
-				},
-			},
-
-			topic: "httpstop",
-			event: httpStop(testAppId, time.Now().UnixNano()),
-		},
-
-		{
-			config: &Config{
-				Kafka: Kafka{
-					Topic: Topic{
 						HttpStartStop: "httpstartstop",
 					},
 				},

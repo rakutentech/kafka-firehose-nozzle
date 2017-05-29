@@ -65,28 +65,6 @@ func containerMetric(appId string, timestamp int64) *events.Envelope {
 	}
 }
 
-func httpStart(appId string, timestamp int64) *events.Envelope {
-	return &events.Envelope{
-		EventType: events.Envelope_HttpStart.Enum(),
-		Origin:    proto.String("fake-origin-4"),
-		Timestamp: proto.Int64(timestamp),
-		HttpStart: &events.HttpStart{
-			ApplicationId: str2uuid(appId),
-		},
-	}
-}
-
-func httpStop(appId string, timestamp int64) *events.Envelope {
-	return &events.Envelope{
-		EventType: events.Envelope_HttpStop.Enum(),
-		Origin:    proto.String("fake-origin-5"),
-		Timestamp: proto.Int64(timestamp),
-		HttpStop: &events.HttpStop{
-			ApplicationId: str2uuid(appId),
-		},
-	}
-}
-
 func httpStartStop(appId string, timestamp int64) *events.Envelope {
 	return &events.Envelope{
 		EventType: events.Envelope_HttpStartStop.Enum(),

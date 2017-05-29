@@ -80,10 +80,6 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 		valueMetricTopic:        config.Kafka.Topic.ValueMetric,
 		containerMetricTopic:    config.Kafka.Topic.ContainerMetric,
 		containerMetricTopicFmt: config.Kafka.Topic.ContainerMetricFmt,
-		httpStartTopic:          config.Kafka.Topic.HttpStart,
-		httpStartTopicFmt:       config.Kafka.Topic.HttpStartFmt,
-		httpStopTopic:           config.Kafka.Topic.HttpStop,
-		httpStopTopicFmt:        config.Kafka.Topic.HttpStopFmt,
 		httpStartStopTopic:      config.Kafka.Topic.HttpStartStop,
 		httpStartStopTopicFmt:   config.Kafka.Topic.HttpStartStopFmt,
 		counterEventTopic:       config.Kafka.Topic.CounterEvent,
@@ -109,10 +105,6 @@ type KafkaProducer struct {
 	valueMetricTopic        string
 	containerMetricTopic    string
 	containerMetricTopicFmt string
-	httpStartTopic          string
-	httpStartTopicFmt       string
-	httpStopTopic           string
-	httpStopTopicFmt        string
 	httpStartStopTopic      string
 	httpStartStopTopicFmt   string
 	counterEventTopic       string
@@ -155,14 +147,6 @@ func (kp *KafkaProducer) ValueMetricTopic() string {
 
 func (kp *KafkaProducer) ContainerMetricTopic(appID string) string {
 	return fmtTopic(kp.containerMetricTopic, kp.containerMetricTopicFmt, appID)
-}
-
-func (kp *KafkaProducer) HttpStartTopic(appID string) string {
-	return fmtTopic(kp.httpStartTopic, kp.httpStartTopicFmt, appID)
-}
-
-func (kp *KafkaProducer) HttpStopTopic(appID string) string {
-	return fmtTopic(kp.httpStopTopic, kp.httpStopTopicFmt, appID)
 }
 
 func (kp *KafkaProducer) HttpStartStopTopic(appID string) string {
@@ -275,22 +259,11 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 	kp.Stats.Inc(Consume)
 
 	switch event.GetEventType() {
-	case events.Envelope_HttpStart: // deprecated
-		appGuid = uuid2str(event.GetHttpStart().GetApplicationId())
-		instanceIdx = int(event.GetHttpStart().GetInstanceIndex())
-		topic = kp.HttpStartTopic(appGuid)
-		kp.Stats.Inc(ConsumeHttpStart)
-
 	case events.Envelope_HttpStartStop:
 		appGuid = uuid2str(event.GetHttpStartStop().GetApplicationId())
 		instanceIdx = int(event.GetHttpStartStop().GetInstanceIndex())
 		topic = kp.HttpStartStopTopic(appGuid)
 		kp.Stats.Inc(ConsumeHttpStartStop)
-
-	case events.Envelope_HttpStop: // deprecated
-		appGuid = uuid2str(event.GetHttpStop().GetApplicationId())
-		topic = kp.HttpStopTopic(appGuid)
-		kp.Stats.Inc(ConsumeHttpStop)
 
 	case events.Envelope_LogMessage:
 		appGuid = event.GetLogMessage().GetAppId()

@@ -4,61 +4,72 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/cloudfoundry/noaa"
-	noaa_errors "github.com/cloudfoundry/noaa/errors"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/gogo/protobuf/proto"
 )
 
-// RecentLogs connects to traffic controller via its 'recentlogs' http(s)
+// RecentLogs connects to trafficcontroller via its 'recentlogs' http(s)
 // endpoint and returns a slice of recent messages.  It does not guarantee any
-// order of the messages; they are in the order returned by traffic controller.
+// order of the messages; they are in the order returned by trafficcontroller.
 //
 // The noaa.SortRecent function is provided to sort the data returned by
 // this method.
 func (c *Consumer) RecentLogs(appGuid string, authToken string) ([]*events.LogMessage, error) {
-	messages := make([]*events.LogMessage, 0, 200)
-	callback := func(envelope *events.Envelope) error {
-		messages = append(messages, envelope.GetLogMessage())
-		return nil
-	}
-	err := c.readTC(appGuid, authToken, "recentlogs", callback)
+	envelopes, err := c.readTC(appGuid, authToken, "recentlogs")
 	if err != nil {
 		return nil, err
+	}
+	messages := make([]*events.LogMessage, 0, 200)
+	for _, env := range envelopes {
+		messages = append(messages, env.GetLogMessage())
 	}
 	return messages, nil
 }
 
-// ContainerMetrics connects to traffic controller via its 'containermetrics'
-// http(s) endpoint and returns the most recent messages for an app.  The
-// returned metrics will be sorted by InstanceIndex.
+// ContainerMetrics is deprecated in favor of ContainerEnvelopes, since
+// returning the ContainerMetric type directly hides important
+// information, like the timestamp.
+//
+// The returned values will be the same as ContainerEnvelopes, just with
+// the Envelope stripped out.
 func (c *Consumer) ContainerMetrics(appGuid string, authToken string) ([]*events.ContainerMetric, error) {
-	messages := make([]*events.ContainerMetric, 0, 200)
-	callback := func(envelope *events.Envelope) error {
-		if envelope.GetEventType() == events.Envelope_LogMessage {
-			return errors.New(fmt.Sprintf("Upstream error: %s", envelope.GetLogMessage().GetMessage()))
-		}
-		messages = append(messages, envelope.GetContainerMetric())
-		return nil
-	}
-	err := c.readTC(appGuid, authToken, "containermetrics", callback)
+	envelopes, err := c.ContainerEnvelopes(appGuid, authToken)
 	if err != nil {
 		return nil, err
 	}
+	messages := make([]*events.ContainerMetric, 0, len(envelopes))
+	for _, env := range envelopes {
+		messages = append(messages, env.GetContainerMetric())
+	}
 	noaa.SortContainerMetrics(messages)
-	return messages, err
+	return messages, nil
 }
 
-func (c *Consumer) readTC(appGuid string, authToken string, endpoint string, callback func(*events.Envelope) error) error {
+// ContainerEnvelopes connects to trafficcontroller via its 'containermetrics'
+// http(s) endpoint and returns the most recent dropsonde envelopes for an app.
+func (c *Consumer) ContainerEnvelopes(appGuid, authToken string) ([]*events.Envelope, error) {
+	envelopes, err := c.readTC(appGuid, authToken, "containermetrics")
+	if err != nil {
+		return nil, err
+	}
+	for _, env := range envelopes {
+		if env.GetEventType() == events.Envelope_LogMessage {
+			return nil, errors.New(fmt.Sprintf("Upstream error: %s", env.GetLogMessage().GetMessage()))
+		}
+	}
+	return envelopes, nil
+}
+
+func (c *Consumer) readTC(appGuid string, authToken string, endpoint string) ([]*events.Envelope, error) {
 	trafficControllerUrl, err := url.ParseRequestURI(c.trafficControllerUrl)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	scheme := "https"
@@ -68,29 +79,20 @@ func (c *Consumer) readTC(appGuid string, authToken string, endpoint string, cal
 
 	recentPath := fmt.Sprintf("%s://%s/apps/%s/%s", scheme, trafficControllerUrl.Host, appGuid, endpoint)
 
-	req, _ := http.NewRequest("GET", recentPath, nil)
-	req.Header.Set("Authorization", authToken)
-
-	resp, err := c.client.Do(req)
+	resp, err := c.requestTC(recentPath, authToken)
 	if err != nil {
-		message := `Error dialing traffic controller server: %s.
-Please ask your Cloud Foundry Operator to check the platform configuration (traffic controller endpoint is %s).`
-		return errors.New(fmt.Sprintf(message, err, c.trafficControllerUrl))
+		return nil, err
 	}
 	defer resp.Body.Close()
 
-	err = checkForErrors(resp)
-	if err != nil {
-		return err
-	}
-
 	reader, err := getMultipartReader(resp)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var buffer bytes.Buffer
 
+	var envelopes []*events.Envelope
 	for part, loopErr := reader.NextPart(); loopErr == nil; part, loopErr = reader.NextPart() {
 		buffer.Reset()
 
@@ -102,29 +104,54 @@ Please ask your Cloud Foundry Operator to check the platform configuration (traf
 		envelope := new(events.Envelope)
 		proto.Unmarshal(buffer.Bytes(), envelope)
 
-		err = callback(envelope)
-		if err != nil {
-			return err
+		envelopes = append(envelopes, envelope)
+	}
+
+	return envelopes, nil
+}
+
+func (c *Consumer) requestTC(path, authToken string) (*http.Response, error) {
+	if authToken == "" && c.refreshTokens {
+		return c.requestTCNewToken(path)
+	}
+	var err error
+	resp, httpErr := c.tryTCConnection(path, authToken)
+	if httpErr != nil {
+		err = httpErr.error
+		if httpErr.statusCode == http.StatusUnauthorized && c.refreshTokens {
+			resp, err = c.requestTCNewToken(path)
+		}
+	}
+	return resp, err
+}
+
+func (c *Consumer) requestTCNewToken(path string) (*http.Response, error) {
+	token, err := c.getToken()
+	if err != nil {
+		return nil, err
+	}
+	conn, httpErr := c.tryTCConnection(path, token)
+	if httpErr != nil {
+		return nil, httpErr.error
+	}
+	return conn, nil
+}
+
+func (c *Consumer) tryTCConnection(recentPath, token string) (*http.Response, *httpError) {
+	req, _ := http.NewRequest("GET", recentPath, nil)
+	req.Header.Set("Authorization", token)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		message := `Error dialing trafficcontroller server: %s.
+Please ask your Cloud Foundry Operator to check the platform configuration (trafficcontroller endpoint is %s).`
+		return nil, &httpError{
+			statusCode: -1,
+			error:      errors.New(fmt.Sprintf(message, err, c.trafficControllerUrl)),
 		}
 	}
 
-	return nil
-}
-
-func checkForErrors(resp *http.Response) error {
-	if resp.StatusCode == http.StatusUnauthorized {
-		data, _ := ioutil.ReadAll(resp.Body)
-		return noaa_errors.NewUnauthorizedError(string(data))
-	}
-
-	if resp.StatusCode == http.StatusBadRequest {
-		return ErrBadRequest
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return ErrNotOK
-	}
-	return nil
+	return resp, checkForErrors(resp)
 }
 
 func getMultipartReader(resp *http.Response) (*multipart.Reader, error) {

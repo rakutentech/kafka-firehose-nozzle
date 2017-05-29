@@ -80,35 +80,21 @@ func (mj *Envelope) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 			buf.WriteByte(',')
 		}
 	}
-	if mj.HttpStart != nil {
-		if true {
-			buf.WriteString(`"httpStart":`)
-
-			{
-
-				err = mj.HttpStart.MarshalJSONBuf(buf)
-				if err != nil {
-					return err
-				}
-
+	if len(mj.Tags) != 0 {
+		if mj.Tags == nil {
+			buf.WriteString(`"tags":null`)
+		} else {
+			buf.WriteString(`"tags":{ `)
+			for key, value := range mj.Tags {
+				fflib.WriteJsonString(buf, key)
+				buf.WriteString(`:`)
+				fflib.WriteJsonString(buf, string(value))
+				buf.WriteByte(',')
 			}
-			buf.WriteByte(',')
+			buf.Rewind(1)
+			buf.WriteByte('}')
 		}
-	}
-	if mj.HttpStop != nil {
-		if true {
-			buf.WriteString(`"httpStop":`)
-
-			{
-
-				err = mj.HttpStop.MarshalJSONBuf(buf)
-				if err != nil {
-					return err
-				}
-
-			}
-			buf.WriteByte(',')
-		}
+		buf.WriteByte(',')
 	}
 	if mj.HttpStartStop != nil {
 		if true {

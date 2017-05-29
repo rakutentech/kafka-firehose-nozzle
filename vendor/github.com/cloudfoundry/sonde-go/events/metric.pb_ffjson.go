@@ -66,6 +66,20 @@ func (mj *ContainerMetric) MarshalJSONBuf(buf fflib.EncodingBuffer) error {
 			buf.WriteByte(',')
 		}
 	}
+	if mj.MemoryBytesQuota != nil {
+		if true {
+			buf.WriteString(`"memoryBytesQuota":`)
+			fflib.FormatBits2(buf, uint64(*mj.MemoryBytesQuota), 10, false)
+			buf.WriteByte(',')
+		}
+	}
+	if mj.DiskBytesQuota != nil {
+		if true {
+			buf.WriteString(`"diskBytesQuota":`)
+			fflib.FormatBits2(buf, uint64(*mj.DiskBytesQuota), 10, false)
+			buf.WriteByte(',')
+		}
+	}
 	buf.Rewind(1)
 	buf.WriteByte('}')
 	return nil

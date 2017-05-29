@@ -21,8 +21,6 @@ type StatsType int
 const (
 	Consume                StatsType = iota // messages received
 	ConsumeFail                             // ?
-	ConsumeHttpStop                         // HttpStop messages received
-	ConsumeHttpStart                        // HttpStart messages received
 	ConsumeHttpStartStop                    // HttpStartStop messages received
 	ConsumeValueMetric                      // ValueMetric messages received
 	ConsumeCounterEvent                     // CounterEvent messages received
@@ -43,8 +41,6 @@ type Stats struct {
 	Consume                uint64 `json:"consume"`
 	ConsumePerSec          uint64 `json:"consume_per_sec"`
 	ConsumeFail            uint64 `json:"consume_fail"`
-	ConsumeHttpStop        uint64 `json:"consume_http_stop"`
-	ConsumeHttpStart       uint64 `json:"consume_http_start"`
 	ConsumeHttpStartStop   uint64 `json:"consume_http_start_stop"`
 	ConsumeValueMetric     uint64 `json:"consume_value_metric"`
 	ConsumeCounterEvent    uint64 `json:"consume_counter_event"`
@@ -126,10 +122,6 @@ func (s *Stats) Inc(statsType StatsType) {
 		atomic.AddUint64(&s.PublishFail, 1)
 	case SlowConsumerAlert:
 		atomic.AddUint64(&s.SlowConsumerAlert, 1)
-	case ConsumeHttpStop:
-		atomic.AddUint64(&s.ConsumeHttpStop, 1)
-	case ConsumeHttpStart:
-		atomic.AddUint64(&s.ConsumeHttpStart, 1)
 	case ConsumeHttpStartStop:
 		atomic.AddUint64(&s.ConsumeHttpStartStop, 1)
 	case ConsumeValueMetric:
