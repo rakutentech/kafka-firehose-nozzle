@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -252,12 +253,21 @@ func (kp *KafkaProducer) Produce(ctx context.Context, eventCh <-chan *events.Env
 	}
 }
 
+// regexp to match app_index in router logs. because there are potentially arbitrary strings in
+// them (url, user-agent, ...) we force the match at the end using a greedy prefix and ungreedy
+// suffix
+// this should really be "(?<=app_index:)[0-9]+(?!.*app_index)" but go doesn't have lookahead
+// or lookbehind
+var rtrLogAppIndexRE = regexp.MustCompile("^.* app_index:([0-9]+) .*?$")
+
 func (kp *KafkaProducer) input(event *events.Envelope) {
 	topic, appGuid := "", ""
 	instanceIdx := 0
 
 	kp.Stats.Inc(Consume)
 
+	// FIXME(carlo): move message processing *after* we have decided to forward the message or not
+	// as well as based on whether we want to enrich it
 	switch event.GetEventType() {
 	case events.Envelope_HttpStartStop:
 		appGuid = uuid2str(event.GetHttpStartStop().GetApplicationId())
@@ -273,7 +283,11 @@ func (kp *KafkaProducer) input(event *events.Envelope) {
 		case "APP":
 			instanceIdx, _ = strconv.Atoi(event.GetLogMessage().GetSourceInstance())
 		case "RTR":
-			instanceIdx = 0
+			// TODO(carlo): needs test
+			m := rtrLogAppIndexRE.FindSubmatch(event.GetLogMessage().GetMessage())
+			if m != nil {
+				instanceIdx, _ = strconv.Atoi(string(m[1]))
+			}
 		}
 		topic = kp.LogMessageTopic(appGuid)
 		kp.Stats.Inc(ConsumeLogMessage)
