@@ -65,8 +65,6 @@ func TestStatsJson(t *testing.T) {
   "consume": 100,
   "consume_per_sec": 0,
   "consume_fail": 0,
-  "consume_http_stop": 0,
-  "consume_http_start": 0,
   "consume_http_start_stop": 0,
   "consume_value_metric": 0,
   "consume_counter_event": 0,

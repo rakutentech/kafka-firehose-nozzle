@@ -48,10 +48,6 @@ type Topic struct {
 	ValueMetric        string `toml:"value_metric"`
 	ContainerMetric    string `toml:"container_metric"`
 	ContainerMetricFmt string `toml:"container_metric_fmt"`
-	HttpStart          string `toml:"http_start"`
-	HttpStartFmt       string `toml:"http_start_fmt"`
-	HttpStop           string `toml:"http_stop"`
-	HttpStopFmt        string `toml:"http_stop_fmt"`
 	HttpStartStop      string `toml:"http_start_stop"`
 	HttpStartStopFmt   string `toml:"http_start_stop_fmt"`
 	CounterEvent       string `toml:"counter_event"`

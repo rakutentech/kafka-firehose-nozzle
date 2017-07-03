@@ -64,32 +64,6 @@ func TestKafkaProducer(t *testing.T) {
 			config: &Config{
 				Kafka: Kafka{
 					Topic: Topic{
-						HttpStart: "httpstart",
-					},
-				},
-			},
-
-			topic: "httpstart",
-			event: httpStart(testAppId, time.Now().UnixNano()),
-		},
-
-		{
-			config: &Config{
-				Kafka: Kafka{
-					Topic: Topic{
-						HttpStop: "httpstop",
-					},
-				},
-			},
-
-			topic: "httpstop",
-			event: httpStop(testAppId, time.Now().UnixNano()),
-		},
-
-		{
-			config: &Config{
-				Kafka: Kafka{
-					Topic: Topic{
 						HttpStartStop: "httpstartstop",
 					},
 				},
@@ -525,5 +499,53 @@ func TestUUIDStringConversion(t *testing.T) {
 	l, h := str2uuid(uuid).GetLow(), str2uuid(uuid).GetHigh()
 	if l != 0x7243cc580bc17af4 || h != 0x79d4c3b2020e67a5 {
 		t.Fatalf("encoded UUID mismatch: %x %x", l, h)
+	}
+}
+
+func TestEnvelopeFormat(t *testing.T) {
+	timestamp := int64(1461318380946558204)
+	cases := []struct {
+		event    *events.Envelope
+		expected string
+	}{
+
+		{
+			event: logMessage("hello", testAppId, timestamp),
+			expected: fmt.Sprintf(
+				`{"origin":"fake-origin-1","eventType":5,"timestamp":%d,"logMessage":{"message":"aGVsbG8=","message_type":1,"timestamp":1461318380946558204,"app_id":"%s","source_type":"DEA"}}`,
+				timestamp, testAppId),
+		},
+		{
+			event:    httpStartStop(testAppId, timestamp),
+			expected: fmt.Sprintf(`{"origin":"fake-origin-6","eventType":4,"timestamp":%d,"httpStartStop":{"applicationId":{"low":3045678995047011891,"high":15064251325855190961}}}`, timestamp),
+		},
+		{
+			event:    valueMetric(timestamp),
+			expected: fmt.Sprintf(`{"origin":"fake-origin-2","eventType":6,"timestamp":%d,"valueMetric":{"name":"df","value":0.99}}`, timestamp),
+		},
+		{
+			event:    counterEvent(timestamp),
+			expected: fmt.Sprintf(`{"origin":"fake-origin-7","eventType":7,"timestamp":%d,"counterEvent":{"name":"test-event"}}`, timestamp),
+		},
+		{
+			event:    containerMetric(testAppId, timestamp),
+			expected: fmt.Sprintf(`{"origin":"fake-origin-3","eventType":9,"timestamp":%d,"containerMetric":{"applicationId":"%s","instanceIndex":0}}`, timestamp, testAppId),
+		},
+		{
+			event:    errorMsg(timestamp),
+			expected: fmt.Sprintf(`{"origin":"fake-origin-8","eventType":8,"timestamp":%d,"error":{"message":"test-error"}}`, timestamp),
+		},
+	}
+	for _, tc := range cases {
+
+		encoder := toJSON(tc.event)
+		buf, err := encoder.Encode()
+		if err != nil {
+			t.Fatalf("err: %s", err)
+		}
+
+		if string(buf) != tc.expected {
+			t.Fatalf("expect %q to be eq %q", string(buf), tc.expected)
+		}
 	}
 }

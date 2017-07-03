@@ -13,7 +13,6 @@ func TestJsonEncoder_Encode(t *testing.T) {
 	expectLength := 225
 
 	encoder := toJSON(logMessage("hello", testAppId, timestamp))
-
 	buf, err := encoder.Encode()
 	if err != nil {
 		t.Fatalf("err: %s", err)
