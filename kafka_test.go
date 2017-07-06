@@ -339,7 +339,6 @@ func TestKafkaProducer_RoundRobin(t *testing.T) {
 }
 
 func TestKafkaProducer_repartition(t *testing.T) {
-	return
 	// topic which is used in this test
 	topic := "test-topic"
 	partitionBroken := int32(0)
@@ -374,6 +373,10 @@ func TestKafkaProducer_repartition(t *testing.T) {
 
 			RetryMax:     1,
 			RetryBackoff: 10,
+
+			Topic: Topic{
+				LogMessage: topic,
+			},
 		},
 	})
 	if err != nil {

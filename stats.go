@@ -20,7 +20,7 @@ type StatsType int
 
 const (
 	Consume                StatsType = iota // messages received
-	ConsumeFail                             // ?
+	ConsumeFail                             // messages failed to be consumed
 	ConsumeHttpStartStop                    // HttpStartStop messages received
 	ConsumeValueMetric                      // ValueMetric messages received
 	ConsumeCounterEvent                     // CounterEvent messages received
@@ -33,7 +33,7 @@ const (
 	Publish                                 // messages succesfully sent to kafka
 	PublishFail                             // messages that couldn't be sent to kafka?
 	SlowConsumerAlert                       // slow consumer alerts emitted by noaa?
-	SubInputBuffer
+	SubInputBuffer                          // messages in buffer for re-producing/repartitioning
 )
 
 // Stats stores various stats infomation
