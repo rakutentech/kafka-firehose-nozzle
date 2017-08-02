@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/rakutentech/kafka-firehose-nozzle",
-	"GoVersion": "go1.6",
+	"GoVersion": "go1.8",
 	"GodepVersion": "v79",
 	"Deps": [
 		{
@@ -19,19 +19,22 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-16-ga1d4a94",
+			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa/consumer",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-16-ga1d4a94",
+			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/noaa/errors",
-			"Rev": "ece624d29c30f7c8288edffedecd5a29e6e791cb"
+			"Comment": "v2.0.0-16-ga1d4a94",
+			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
-			"Rev": "ae27095c3a1b9977a0ef1928b0147d5689f2e921"
+			"Rev": "5f5bca3bcb61dbf9371b8db82497c6396cc0ea9b"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -54,18 +57,18 @@
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-17-gefccd33a",
+			"Rev": "efccd33a0c20aa078705571d5ddbfa14c8395a63"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/proto",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-17-gefccd33a",
+			"Rev": "efccd33a0c20aa078705571d5ddbfa14c8395a63"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
-			"Comment": "v0.2-10-g74b6e9d",
-			"Rev": "74b6e9deaff6ba6da1389ec97351d337f0d08b06"
+			"Comment": "v0.4-17-gefccd33a",
+			"Rev": "efccd33a0c20aa078705571d5ddbfa14c8395a63"
 		},
 		{
 			"ImportPath": "github.com/golang/snappy",
@@ -91,6 +94,11 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "fb93926129b8ec0056f2f458b1f519654814edf0"
+		},
+		{
+			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
+			"Comment": "v2.0.0-16-ga1d4a94",
+			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
 		}
 	]
 }

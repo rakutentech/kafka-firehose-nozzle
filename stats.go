@@ -19,19 +19,37 @@ const (
 type StatsType int
 
 const (
-	Consume StatsType = iota
-	ConsumeFail
-	Publish
-	PublishFail
-	SlowConsumerAlert
-	SubInputBuffer
+	Consume                StatsType = iota // messages received
+	ConsumeFail                             // messages failed to be consumed
+	ConsumeHttpStartStop                    // HttpStartStop messages received
+	ConsumeValueMetric                      // ValueMetric messages received
+	ConsumeCounterEvent                     // CounterEvent messages received
+	ConsumeLogMessage                       // LogMessage messages received
+	ConsumeError                            // Error messages received
+	ConsumeContainerMetric                  // ContainerMetric messages received
+	ConsumeUnknown                          // unknown type messages received
+	Ignored                                 // messages dropped because of no forwarding rule
+	Forwarded                               // messages enqueued to be sent to kafka
+	Publish                                 // messages succesfully sent to kafka
+	PublishFail                             // messages that couldn't be sent to kafka?
+	SlowConsumerAlert                       // slow consumer alerts emitted by noaa?
+	SubInputBuffer                          // messages in buffer for re-producing/repartitioning
 )
 
 // Stats stores various stats infomation
 type Stats struct {
-	Consume       uint64 `json:"consume"`
-	ConsumePerSec uint64 `json:"consume_per_sec"`
-	ConsumeFail   uint64 `json:"consume_fail"`
+	Consume                uint64 `json:"consume"`
+	ConsumePerSec          uint64 `json:"consume_per_sec"`
+	ConsumeFail            uint64 `json:"consume_fail"`
+	ConsumeHttpStartStop   uint64 `json:"consume_http_start_stop"`
+	ConsumeValueMetric     uint64 `json:"consume_value_metric"`
+	ConsumeCounterEvent    uint64 `json:"consume_counter_event"`
+	ConsumeLogMessage      uint64 `json:"consume_log_message"`
+	ConsumeError           uint64 `json:"consume_error"`
+	ConsumeContainerMetric uint64 `json:"consume_container_metric"`
+	ConsumeUnknown         uint64 `json:"consume_unknown"`
+	Ignored                uint64 `json:"ignored"`
+	Forwarded              uint64 `json:"forwarded"`
 
 	Publish       uint64 `json:"publish"`
 	PublishPerSec uint64 `json:"publish_per_sec"`
@@ -45,7 +63,7 @@ type Stats struct {
 	// buffer on subInput.
 	SubInputBuffer int64 `json:"subinupt_buffer"`
 
-	// Delay is Consume - Pulish
+	// Delay is Forwarded - (Publish + PublishFail)
 	// This indicate how slow publish to kafka
 	Delay uint64 `json:"delay"`
 
@@ -73,7 +91,7 @@ func NewStats() *Stats {
 }
 
 func (s *Stats) Json() ([]byte, error) {
-	s.Delay = s.Consume - s.Publish - s.PublishFail
+	s.Delay = s.Forwarded - (s.Publish + s.PublishFail)
 	return json.Marshal(s)
 }
 
@@ -104,6 +122,24 @@ func (s *Stats) Inc(statsType StatsType) {
 		atomic.AddUint64(&s.PublishFail, 1)
 	case SlowConsumerAlert:
 		atomic.AddUint64(&s.SlowConsumerAlert, 1)
+	case ConsumeHttpStartStop:
+		atomic.AddUint64(&s.ConsumeHttpStartStop, 1)
+	case ConsumeValueMetric:
+		atomic.AddUint64(&s.ConsumeValueMetric, 1)
+	case ConsumeCounterEvent:
+		atomic.AddUint64(&s.ConsumeCounterEvent, 1)
+	case ConsumeLogMessage:
+		atomic.AddUint64(&s.ConsumeLogMessage, 1)
+	case ConsumeError:
+		atomic.AddUint64(&s.ConsumeError, 1)
+	case ConsumeContainerMetric:
+		atomic.AddUint64(&s.ConsumeContainerMetric, 1)
+	case ConsumeUnknown:
+		atomic.AddUint64(&s.ConsumeUnknown, 1)
+	case Ignored:
+		atomic.AddUint64(&s.Ignored, 1)
+	case Forwarded:
+		atomic.AddUint64(&s.Forwarded, 1)
 	case SubInputBuffer:
 		atomic.AddInt64(&s.SubInputBuffer, 1)
 	}

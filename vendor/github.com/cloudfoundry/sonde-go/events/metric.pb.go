@@ -26,9 +26,10 @@ type ValueMetric struct {
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *ValueMetric) Reset()         { *m = ValueMetric{} }
-func (m *ValueMetric) String() string { return proto.CompactTextString(m) }
-func (*ValueMetric) ProtoMessage()    {}
+func (m *ValueMetric) Reset()                    { *m = ValueMetric{} }
+func (m *ValueMetric) String() string            { return proto.CompactTextString(m) }
+func (*ValueMetric) ProtoMessage()               {}
+func (*ValueMetric) Descriptor() ([]byte, []int) { return fileDescriptorMetric, []int{0} }
 
 func (m *ValueMetric) GetName() string {
 	if m != nil && m.Name != nil {
@@ -59,9 +60,10 @@ type CounterEvent struct {
 	XXX_unrecognized []byte  `json:"-"`
 }
 
-func (m *CounterEvent) Reset()         { *m = CounterEvent{} }
-func (m *CounterEvent) String() string { return proto.CompactTextString(m) }
-func (*CounterEvent) ProtoMessage()    {}
+func (m *CounterEvent) Reset()                    { *m = CounterEvent{} }
+func (m *CounterEvent) String() string            { return proto.CompactTextString(m) }
+func (*CounterEvent) ProtoMessage()               {}
+func (*CounterEvent) Descriptor() ([]byte, []int) { return fileDescriptorMetric, []int{1} }
 
 func (m *CounterEvent) GetName() string {
 	if m != nil && m.Name != nil {
@@ -91,12 +93,15 @@ type ContainerMetric struct {
 	CpuPercentage    *float64 `protobuf:"fixed64,3,req,name=cpuPercentage" json:"cpuPercentage,omitempty"`
 	MemoryBytes      *uint64  `protobuf:"varint,4,req,name=memoryBytes" json:"memoryBytes,omitempty"`
 	DiskBytes        *uint64  `protobuf:"varint,5,req,name=diskBytes" json:"diskBytes,omitempty"`
+	MemoryBytesQuota *uint64  `protobuf:"varint,6,opt,name=memoryBytesQuota" json:"memoryBytesQuota,omitempty"`
+	DiskBytesQuota   *uint64  `protobuf:"varint,7,opt,name=diskBytesQuota" json:"diskBytesQuota,omitempty"`
 	XXX_unrecognized []byte   `json:"-"`
 }
 
-func (m *ContainerMetric) Reset()         { *m = ContainerMetric{} }
-func (m *ContainerMetric) String() string { return proto.CompactTextString(m) }
-func (*ContainerMetric) ProtoMessage()    {}
+func (m *ContainerMetric) Reset()                    { *m = ContainerMetric{} }
+func (m *ContainerMetric) String() string            { return proto.CompactTextString(m) }
+func (*ContainerMetric) ProtoMessage()               {}
+func (*ContainerMetric) Descriptor() ([]byte, []int) { return fileDescriptorMetric, []int{2} }
 
 func (m *ContainerMetric) GetApplicationId() string {
 	if m != nil && m.ApplicationId != nil {
@@ -129,6 +134,20 @@ func (m *ContainerMetric) GetMemoryBytes() uint64 {
 func (m *ContainerMetric) GetDiskBytes() uint64 {
 	if m != nil && m.DiskBytes != nil {
 		return *m.DiskBytes
+	}
+	return 0
+}
+
+func (m *ContainerMetric) GetMemoryBytesQuota() uint64 {
+	if m != nil && m.MemoryBytesQuota != nil {
+		return *m.MemoryBytesQuota
+	}
+	return 0
+}
+
+func (m *ContainerMetric) GetDiskBytesQuota() uint64 {
+	if m != nil && m.DiskBytesQuota != nil {
+		return *m.DiskBytesQuota
 	}
 	return 0
 }
@@ -274,6 +293,16 @@ func (m *ContainerMetric) MarshalTo(data []byte) (int, error) {
 		i++
 		i = encodeVarintMetric(data, i, uint64(*m.DiskBytes))
 	}
+	if m.MemoryBytesQuota != nil {
+		data[i] = 0x30
+		i++
+		i = encodeVarintMetric(data, i, uint64(*m.MemoryBytesQuota))
+	}
+	if m.DiskBytesQuota != nil {
+		data[i] = 0x38
+		i++
+		i = encodeVarintMetric(data, i, uint64(*m.DiskBytesQuota))
+	}
 	if m.XXX_unrecognized != nil {
 		i += copy(data[i:], m.XXX_unrecognized)
 	}
@@ -364,6 +393,12 @@ func (m *ContainerMetric) Size() (n int) {
 	}
 	if m.DiskBytes != nil {
 		n += 1 + sovMetric(uint64(*m.DiskBytes))
+	}
+	if m.MemoryBytesQuota != nil {
+		n += 1 + sovMetric(uint64(*m.MemoryBytesQuota))
+	}
+	if m.DiskBytesQuota != nil {
+		n += 1 + sovMetric(uint64(*m.DiskBytesQuota))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -801,6 +836,46 @@ func (m *ContainerMetric) Unmarshal(data []byte) error {
 			}
 			m.DiskBytes = &v
 			hasFields[0] |= uint64(0x00000010)
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MemoryBytesQuota", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetric
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.MemoryBytesQuota = &v
+		case 7:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DiskBytesQuota", wireType)
+			}
+			var v uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMetric
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := data[iNdEx]
+				iNdEx++
+				v |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.DiskBytesQuota = &v
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMetric(data[iNdEx:])
@@ -942,3 +1017,32 @@ var (
 	ErrInvalidLengthMetric = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowMetric   = fmt.Errorf("proto: integer overflow")
 )
+
+func init() { proto.RegisterFile("metric.proto", fileDescriptorMetric) }
+
+var fileDescriptorMetric = []byte{
+	// 357 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x92, 0xdf, 0xaa, 0x13, 0x31,
+	0x10, 0x87, 0xd9, 0xed, 0x1f, 0x69, 0xda, 0xaa, 0x04, 0x2f, 0x96, 0x22, 0x65, 0x2d, 0x22, 0x45,
+	0x70, 0xfb, 0x06, 0x5e, 0xb4, 0x28, 0x14, 0x51, 0x74, 0x2f, 0xbc, 0x4f, 0x93, 0xe9, 0x1a, 0xdc,
+	0xcd, 0x2c, 0xd9, 0x49, 0x71, 0x9f, 0xc4, 0x57, 0xf2, 0xd2, 0x47, 0x90, 0x3e, 0x89, 0x24, 0x29,
+	0xda, 0x9e, 0xc3, 0xb9, 0x9b, 0xdf, 0x37, 0x5f, 0x66, 0x27, 0x4b, 0xd8, 0xac, 0x01, 0xb2, 0x5a,
+	0x16, 0xad, 0x45, 0x42, 0x3e, 0x86, 0x13, 0x18, 0xea, 0x16, 0x6f, 0x2a, 0x4d, 0xdf, 0xdc, 0xa1,
+	0x90, 0xd8, 0x6c, 0x2a, 0xac, 0x70, 0x13, 0xda, 0x07, 0x77, 0x0c, 0x29, 0x84, 0x50, 0xc5, 0x63,
+	0x0b, 0xe6, 0x9c, 0x56, 0xb1, 0x5e, 0x7d, 0x60, 0xd3, 0xaf, 0xa2, 0x76, 0xf0, 0x31, 0xcc, 0xe5,
+	0x9c, 0x0d, 0x8d, 0x68, 0x20, 0x4b, 0xf2, 0x74, 0x3d, 0x29, 0x43, 0xcd, 0x9f, 0xb1, 0xd1, 0xc9,
+	0x2b, 0x59, 0x9a, 0xa7, 0xeb, 0xa4, 0x8c, 0xc1, 0x9b, 0xce, 0x68, 0xca, 0x06, 0xd1, 0xf4, 0xf5,
+	0xea, 0x13, 0x9b, 0xed, 0xd0, 0x19, 0x02, 0xfb, 0xce, 0x2f, 0xf6, 0xd0, 0x34, 0x05, 0x35, 0x89,
+	0x30, 0x6d, 0x58, 0xc6, 0xe0, 0x29, 0x21, 0x89, 0x3a, 0x1b, 0xe4, 0x89, 0xa7, 0x21, 0xac, 0x7e,
+	0xa6, 0xec, 0xc9, 0x0e, 0x0d, 0x09, 0x6d, 0xc0, 0x5e, 0x36, 0x7c, 0xc9, 0xe6, 0xa2, 0x6d, 0x6b,
+	0x2d, 0x05, 0x69, 0x34, 0x7b, 0x75, 0x19, 0x7e, 0x0b, 0xbd, 0xa5, 0x4d, 0x47, 0xc2, 0x48, 0xd8,
+	0x1b, 0x05, 0x3f, 0xc2, 0xd7, 0x46, 0xe5, 0x2d, 0xf4, 0x96, 0x6c, 0xdd, 0x67, 0xb0, 0x12, 0x0c,
+	0x89, 0x0a, 0xc2, 0x65, 0x92, 0xf2, 0x16, 0xf2, 0x9c, 0x4d, 0x1b, 0x68, 0xd0, 0xf6, 0xdb, 0x9e,
+	0xa0, 0xcb, 0x86, 0x61, 0xef, 0x6b, 0xc4, 0x9f, 0xb3, 0x89, 0xd2, 0xdd, 0xf7, 0xd8, 0x1f, 0x85,
+	0xfe, 0x7f, 0xc0, 0x5f, 0xb3, 0xa7, 0x57, 0xf2, 0x17, 0x87, 0x24, 0xb2, 0x71, 0xb8, 0xe6, 0x3d,
+	0xce, 0x5f, 0xb1, 0xc7, 0xff, 0x0e, 0x46, 0xf3, 0x51, 0x30, 0xef, 0xd0, 0xed, 0xdb, 0x5f, 0xe7,
+	0x65, 0xf2, 0xfb, 0xbc, 0x4c, 0xfe, 0x9c, 0x97, 0x09, 0x7b, 0x81, 0xb6, 0x2a, 0x64, 0x8d, 0x4e,
+	0x1d, 0xd1, 0x19, 0x65, 0xfb, 0x42, 0x59, 0x6c, 0x3b, 0x34, 0x0a, 0x8a, 0xf8, 0x44, 0xb6, 0xf3,
+	0xf8, 0xfb, 0xde, 0x0b, 0x49, 0x68, 0xfb, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xc6, 0xbe, 0x10,
+	0xbe, 0x48, 0x02, 0x00, 0x00,
+}

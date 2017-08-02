@@ -1,21 +1,19 @@
-# kafka-firehose-nozzle 
+# kafka-firehose-nozzle
 
-[![Build Status](http://img.shields.io/travis/rakutentech/kafka-firehose-nozzle.svg?style=flat-square)](https://travis-ci.org/rakutentech/kafka-firehose-nozzle) [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/rakutentech/kafka-firehose-nozzle) 
+[![Build Status](http://img.shields.io/travis/rakutentech/kafka-firehose-nozzle.svg?style=flat-square)](https://travis-ci.org/rakutentech/kafka-firehose-nozzle) [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/rakutentech/kafka-firehose-nozzle)
 
-`kafka-firehose-nozzle` is [CloudFoundry (CF) nozzle](https://docs.cloudfoundry.org/loggregator/architecture.html#nozzles) for [Apache Kafka](http://kafka.apache.org/). It consumes data from the Loggregator Firehose and then publishes it to Apache Kafka. 
+`kafka-firehose-nozzle` is a [CloudFoundry (CF) nozzle](https://docs.cloudfoundry.org/loggregator/architecture.html#nozzles) for [Apache Kafka](http://kafka.apache.org/). It consumes data from the Loggregator Firehose and then publishes it to Apache Kafka.
 
 The firehose generates events which are defined on [dropsonde-protocol](https://github.com/cloudfoundry/dropsonde-protocol). You can set Kafka topic for each event type (e.g., by default, `LogMessage` events are publish to `log-message` topic). Events are encoded in [protocol buffers](https://developers.google.com/protocol-buffers/) between CF components but when to publish to kafka, events are decoded to plain json text.
 
-*NOTE*: Currently we only support `LogMessage` and `ValueMetric` events (We will support others soon). 
-
-`kafka-firehose-nozzle` is written by Golang and built with [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package. 
+`kafka-firehose-nozzle` is written by Golang and built with [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package.
 
 ## Usage
 
 Basic usage is,
 
 ```bash
-$ kafak-firehose-nozzle [options]
+$ kafka-firehose-nozzle [options]
 ```
 
 The following are available options,
@@ -34,7 +32,7 @@ You can set `password` via `UAA_PASSWORD` environmental variable.
 
 ## Configuration
 
-You can configure it via `.toml` file. You can see the example and description of this configuration file in [example](/example) directory. 
+You can configure it via `.toml` file. You can see the example and description of this configuration file in [example](/example) directory.
 
 ## Install
 
@@ -44,7 +42,7 @@ To install, you can use `go get` command,
 $ go get github.com/rakutentech/kafka-firehose-nozzle
 ```
 
-You can deploy this as Cloud Foundry application with [go-buildpack](https://github.com/cloudfoundry/go-buildpack). 
+You can deploy this as Cloud Foundry application with [go-buildpack](https://github.com/cloudfoundry/go-buildpack).
 
 ## Contribution
 
