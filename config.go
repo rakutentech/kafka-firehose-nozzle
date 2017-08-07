@@ -30,6 +30,9 @@ type CF struct {
 
 	// Firehose configuration
 	IdleTimeout int `toml:"idle_timeout"` // seconds
+
+	// How many times consumer will retry to connect to doppler
+	RetryCount int `toml:"retry_count"`
 }
 
 // Kafka holds Kafka related configuration

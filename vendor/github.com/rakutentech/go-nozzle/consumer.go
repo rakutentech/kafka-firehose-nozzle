@@ -115,6 +115,7 @@ type rawDefaultConsumer struct {
 	insecure       bool
 	debugPrinter   noaaConsumer.DebugPrinter
 	idleTimeout    time.Duration
+	retryCount     int
 
 	logger *log.Logger
 }
@@ -137,6 +138,8 @@ func (c *rawDefaultConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 	}
 
 	nc.SetIdleTimeout(c.idleTimeout)
+
+	nc.SetMaxRetryCount(c.retryCount)
 
 	// Start connection
 	eventChan, errChan := nc.Firehose(c.subscriptionID, c.token)
@@ -184,6 +187,7 @@ func newRawDefaultConsumer(config *Config) (*rawDefaultConsumer, error) {
 		debugPrinter:   config.DebugPrinter,
 		logger:         config.Logger,
 		idleTimeout:    config.IdleTimeout,
+		retryCount:     config.RetryCount,
 	}
 
 	if err := c.validate(); err != nil {
