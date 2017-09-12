@@ -86,9 +86,12 @@ type Config struct {
 	// RetryCount defines how many times consumer will retry to connect to doppler
 	RetryCount int
 
+	// tokenFetcher provides function to get a token, and will be used by noaa consumer
+	// to refresh a token when it is expired
+	tokenFetcher *defaultTokenFetcher
+
 	// The following fileds are now only for testing.
-	tokenFetcher tokenFetcher
-	rawConsumer  rawConsumer
+	rawConsumer rawConsumer
 }
 
 // NewConsumer constructs a new consumer client for nozzle.
@@ -106,6 +109,14 @@ func NewConsumer(config *Config) (Consumer, error) {
 		config.Logger = defaultLogger
 	}
 
+	if config.tokenFetcher == nil {
+		fetcher, err := newDefaultTokenFetcher(config)
+		if err != nil {
+			return nil, fmt.Errorf("failed to construct default token fetcher: %s", err)
+		}
+		config.tokenFetcher = fetcher
+	}
+
 	// If Token is not provided, fetch it by tokenFetcher.
 	if config.Token != "" {
 		config.Logger.Printf("[DEBUG] Using auth token (%s)",
@@ -116,18 +127,8 @@ func NewConsumer(config *Config) (Consumer, error) {
 			return nil, fmt.Errorf("both Token and UaaAddr can not be empty")
 		}
 
-		fetcher := config.tokenFetcher
-		if fetcher == nil {
-			var err error
-			fetcher, err = newDefaultTokenFetcher(config)
-			if err != nil {
-				return nil, fmt.Errorf("failed to construct default token fetcher: %s",
-					err)
-			}
-		}
-
 		// Execute tokenFetcher and get token
-		token, err := fetcher.Fetch()
+		token, err := config.tokenFetcher.Fetch()
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch token: %s", err)
 		}

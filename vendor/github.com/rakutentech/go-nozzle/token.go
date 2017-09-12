@@ -80,6 +80,12 @@ func (tf *defaultTokenFetcher) validate() error {
 	return nil
 }
 
+// implement the interface of new noaa token_refresher
+// to get a new token when the existing one is expired
+func (tf *defaultTokenFetcher) RefreshAuthToken() (string, error) {
+	return tf.Fetch()
+}
+
 func newDefaultTokenFetcher(config *Config) (*defaultTokenFetcher, error) {
 	fetcher := &defaultTokenFetcher{
 		uaaAddr:  config.UaaAddr,
