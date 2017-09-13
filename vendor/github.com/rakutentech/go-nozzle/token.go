@@ -19,6 +19,8 @@ const (
 type tokenFetcher interface {
 	// Fetch fetches the token from Uaa and return it. If any, returns error.
 	Fetch() (string, error)
+	RefreshAuthToken() (string, error)
+
 }
 
 type defaultTokenFetcher struct {

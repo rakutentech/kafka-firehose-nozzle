@@ -89,7 +89,7 @@
 		},
 		{
 			"ImportPath": "github.com/rakutentech/go-nozzle",
-			"Rev": "c499f52745129a83cb7887a5ada6f92a17fec8bd"
+			"Rev": "27fd64b14f6d9c8c4b40e47fe3151e6800bb8c31"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

@@ -116,7 +116,7 @@ type rawDefaultConsumer struct {
 	debugPrinter   noaaConsumer.DebugPrinter
 	idleTimeout    time.Duration
 	retryCount     int
-	tokenRefresher *defaultTokenFetcher
+	tokenRefresher tokenFetcher
 
 	logger *log.Logger
 }
@@ -141,7 +141,9 @@ func (c *rawDefaultConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 	nc.SetIdleTimeout(c.idleTimeout)
 
 	nc.SetMaxRetryCount(c.retryCount)
-	nc.RefreshTokenFrom(c.tokenRefresher)
+	if c.tokenRefresher != nil {
+	    nc.RefreshTokenFrom(c.tokenRefresher)
+	}
 
 	// Start connection
 	eventChan, errChan := nc.Firehose(c.subscriptionID, c.token)

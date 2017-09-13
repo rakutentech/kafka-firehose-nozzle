@@ -88,7 +88,7 @@ type Config struct {
 
 	// tokenFetcher provides function to get a token, and will be used by noaa consumer
 	// to refresh a token when it is expired
-	tokenFetcher *defaultTokenFetcher
+	tokenFetcher tokenFetcher
 
 	// The following fileds are now only for testing.
 	rawConsumer rawConsumer
@@ -109,23 +109,22 @@ func NewConsumer(config *Config) (Consumer, error) {
 		config.Logger = defaultLogger
 	}
 
-	if config.tokenFetcher == nil {
-		fetcher, err := newDefaultTokenFetcher(config)
-		if err != nil {
-			return nil, fmt.Errorf("failed to construct default token fetcher: %s", err)
-		}
-		config.tokenFetcher = fetcher
-	}
-
 	// If Token is not provided, fetch it by tokenFetcher.
 	if config.Token != "" {
 		config.Logger.Printf("[DEBUG] Using auth token (%s)",
 			maskString(config.Token))
 	} else {
-
 		if config.UaaAddr == "" {
 			return nil, fmt.Errorf("both Token and UaaAddr can not be empty")
 		}
+
+	    if config.tokenFetcher == nil {
+		    fetcher, err := newDefaultTokenFetcher(config)
+		    if err != nil {
+			    return nil, fmt.Errorf("failed to construct default token fetcher: %s", err)
+		    }
+		    config.tokenFetcher = fetcher
+	    }
 
 		// Execute tokenFetcher and get token
 		token, err := config.tokenFetcher.Fetch()
