@@ -83,6 +83,9 @@ type Config struct {
 	// If 0 (default) the timeout is disabled.
 	IdleTimeout time.Duration
 
+	// RetryCount defines how many times consumer will retry to connect to doppler
+	RetryCount int
+
 	// The following fileds are now only for testing.
 	tokenFetcher tokenFetcher
 	rawConsumer  rawConsumer

@@ -48,6 +48,9 @@ const (
 	// DefaultIdleTimeout is the default timeout for receiving a single message
 	// from the firehose
 	DefaultIdleTimeout = 60 * time.Second
+
+	// DefaultRetryCount is the default retry times for consumer to connect to doppler
+	DefaultRetryCount = 5
 )
 
 const (
@@ -171,6 +174,10 @@ func (cli *CLI) Run(args []string) int {
 		config.CF.IdleTimeout = int(DefaultIdleTimeout.Seconds())
 	}
 
+	if config.CF.RetryCount == 0 {
+		config.CF.RetryCount = DefaultRetryCount
+	}
+
 	// Initialize stats collector
 	stats := NewStats()
 	go stats.PerSec()
@@ -193,6 +200,7 @@ func (cli *CLI) Run(args []string) int {
 		Username:       config.CF.Username,
 		Password:       config.CF.Password,
 		IdleTimeout:    time.Duration(config.CF.IdleTimeout) * time.Second,
+		RetryCount:     config.CF.RetryCount,
 		SubscriptionID: config.SubscriptionID,
 		Insecure:       config.InsecureSSLSkipVerify,
 		Logger:         logger,
@@ -210,7 +218,7 @@ func (cli *CLI) Run(args []string) int {
 		logger.Printf("[ERROR] Failed to start nozzle consumer: %s", err)
 		return ExitCodeError
 	}
-		
+
 	// Setup nozzle producer
 	var producer NozzleProducer
 	if debug {
