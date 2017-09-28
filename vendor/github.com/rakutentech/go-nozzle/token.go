@@ -19,6 +19,8 @@ const (
 type tokenFetcher interface {
 	// Fetch fetches the token from Uaa and return it. If any, returns error.
 	Fetch() (string, error)
+	RefreshAuthToken() (string, error)
+
 }
 
 type defaultTokenFetcher struct {
@@ -78,6 +80,12 @@ func (tf *defaultTokenFetcher) validate() error {
 	}
 
 	return nil
+}
+
+// implement the interface of new noaa token_refresher
+// to get a new token when the existing one is expired
+func (tf *defaultTokenFetcher) RefreshAuthToken() (string, error) {
+	return tf.Fetch()
 }
 
 func newDefaultTokenFetcher(config *Config) (*defaultTokenFetcher, error) {

@@ -116,6 +116,7 @@ type rawDefaultConsumer struct {
 	debugPrinter   noaaConsumer.DebugPrinter
 	idleTimeout    time.Duration
 	retryCount     int
+	tokenRefresher tokenFetcher
 
 	logger *log.Logger
 }
@@ -140,6 +141,9 @@ func (c *rawDefaultConsumer) Consume() (<-chan *events.Envelope, <-chan error) {
 	nc.SetIdleTimeout(c.idleTimeout)
 
 	nc.SetMaxRetryCount(c.retryCount)
+	if c.tokenRefresher != nil {
+	    nc.RefreshTokenFrom(c.tokenRefresher)
+	}
 
 	// Start connection
 	eventChan, errChan := nc.Firehose(c.subscriptionID, c.token)
@@ -188,6 +192,7 @@ func newRawDefaultConsumer(config *Config) (*rawDefaultConsumer, error) {
 		logger:         config.Logger,
 		idleTimeout:    config.IdleTimeout,
 		retryCount:     config.RetryCount,
+		tokenRefresher: config.tokenFetcher,
 	}
 
 	if err := c.validate(); err != nil {
