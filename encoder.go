@@ -1,9 +1,8 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/cloudfoundry/sonde-go/events"
+	"github.com/mailru/easyjson"
 )
 
 // JsonEncoder is implemtented sarama.Encoder interface.
@@ -14,7 +13,7 @@ type JsonEncoder struct {
 }
 
 func toJSON(e *events.Envelope) *JsonEncoder {
-	encoded, err := json.Marshal(e)
+	encoded, err := easyjson.Marshal(e)
 	return &JsonEncoder{encoded, err}
 }
 
