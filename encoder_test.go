@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/mailru/easyjson"
 )
 
 func TestJsonEncoder_Encode(t *testing.T) {
@@ -24,5 +29,39 @@ func TestJsonEncoder_Encode(t *testing.T) {
 
 	if encoder.Length() != expectLength {
 		t.Fatalf("expect %d to be eq %d", encoder.Length(), expectLength)
+	}
+}
+
+var (
+	msgLog  = logMessage(strings.Repeat("x", 100), testAppId, int64(1461318380946558204))
+	msgHttp = httpStartStop(testAppId, int64(1461318380946558204))
+	msgMet  = containerMetric(testAppId, int64(1461318380946558204))
+)
+
+func BenchmarkJsonEncode(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		json.Marshal(msgLog)
+		json.Marshal(msgHttp)
+		json.Marshal(msgMet)
+	}
+}
+
+func BenchmarkEasyJsonEncodeBuffer(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		easyjson.Marshal(msgLog)
+		easyjson.Marshal(msgHttp)
+		easyjson.Marshal(msgMet)
+	}
+}
+
+func BenchmarkEasyJsonEncodeWriter(b *testing.B) {
+	buf := &bytes.Buffer{}
+	for i := 0; i < b.N; i++ {
+		buf.Reset()
+		easyjson.MarshalToWriter(msgLog, buf)
+		buf.Reset()
+		easyjson.MarshalToWriter(msgHttp, buf)
+		buf.Reset()
+		easyjson.MarshalToWriter(msgMet, buf)
 	}
 }
