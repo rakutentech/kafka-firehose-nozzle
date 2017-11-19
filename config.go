@@ -43,6 +43,8 @@ type Kafka struct {
 	RetryMax       int `toml:"retry_max"`
 	RetryBackoff   int `toml:"retry_backoff_ms"`
 	RepartitionMax int `toml:"repartition_max"`
+
+	Compression string `toml:"compression"` // ("gzip", "snappy" or "none", default: "none")
 }
 
 type Topic struct {

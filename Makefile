@@ -23,7 +23,6 @@ test-race:
 test-all: vet lint test cover
 
 vet:
-	@go get golang.org/x/tools/cmd/vet
 	go tool vet *.go
 
 lint:
