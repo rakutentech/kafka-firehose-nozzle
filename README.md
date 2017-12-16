@@ -2,11 +2,11 @@
 
 [![Build Status](http://img.shields.io/travis/rakutentech/kafka-firehose-nozzle.svg?style=flat-square)](https://travis-ci.org/rakutentech/kafka-firehose-nozzle) [![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](http://godoc.org/github.com/rakutentech/kafka-firehose-nozzle)
 
-`kafka-firehose-nozzle` is a [CloudFoundry (CF) nozzle](https://docs.cloudfoundry.org/loggregator/architecture.html#nozzles) for [Apache Kafka](http://kafka.apache.org/). It consumes data from the Loggregator Firehose and then publishes it to Apache Kafka.
+`kafka-firehose-nozzle` is a [CloudFoundry (CF) nozzle](https://docs.cloudfoundry.org/loggregator/architecture.html#nozzles) for [Apache Kafka](http://kafka.apache.org/). It consumes data from the Cloud Foundry Firehose and publishes it to one or more Apache Kafka topics.
 
-The firehose generates events which are defined on [dropsonde-protocol](https://github.com/cloudfoundry/dropsonde-protocol). You can set Kafka topic for each event type (e.g., by default, `LogMessage` events are publish to `log-message` topic). Events are encoded in [protocol buffers](https://developers.google.com/protocol-buffers/) between CF components but when to publish to kafka, events are decoded to plain json text.
+You can set Kafka topic for each event type (e.g., by default, `LogMessage` events are publish to `log-message` topic). Events are decoded from the [dropsonde protobuf format](https://github.com/cloudfoundry/dropsonde-protocol) and published to Kafka encoded in the [sonde-go JSON format](https://github.com/cloudfoundry/sonde-go/tree/master/events).
 
-`kafka-firehose-nozzle` is written by Golang and built with [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package.
+`kafka-firehose-nozzle` is written in Go and uses the [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package.
 
 ## Usage
 
