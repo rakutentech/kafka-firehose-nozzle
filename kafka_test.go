@@ -123,6 +123,44 @@ func TestKafkaProducer(t *testing.T) {
 			topic: fmt.Sprintf("container-metric-%s", testAppId),
 			event: containerMetric(testAppId, time.Now().UnixNano()),
 		},
+
+		// use compression
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "log",
+					},
+					Compression: "gzip",
+				},
+			},
+			topic: "log",
+			event: logMessage("", testAppId, time.Now().UnixNano()),
+		},
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "log",
+					},
+					Compression: "snappy",
+				},
+			},
+			topic: "log",
+			event: logMessage("", testAppId, time.Now().UnixNano()),
+		},
+		{
+			config: &Config{
+				Kafka: Kafka{
+					Topic: Topic{
+						LogMessage: "log",
+					},
+					Compression: "none",
+				},
+			},
+			topic: "log",
+			event: logMessage("", testAppId, time.Now().UnixNano()),
+		},
 	}
 
 	for _, tc := range cases {
@@ -145,6 +183,17 @@ func TestKafkaProducer(t *testing.T) {
 		producer, err := NewKafkaProducer(nil, stats, tc.config)
 		if err != nil {
 			t.Fatalf("err: %s", err)
+		}
+
+		if tc.config.Kafka.Compression == "gzip" &&
+			producer.(*KafkaProducer).config.Producer.Compression != sarama.CompressionGZIP {
+			t.Fatalf("gzip compression is not set on producer")
+		} else if tc.config.Kafka.Compression == "snappy" &&
+			producer.(*KafkaProducer).config.Producer.Compression != sarama.CompressionSnappy {
+			t.Fatalf("snappy compression is not set on producer")
+		} else if (tc.config.Kafka.Compression == "none" || tc.config.Kafka.Compression == "") &&
+			producer.(*KafkaProducer).config.Producer.Compression != sarama.CompressionNone {
+			t.Fatalf("none compression is not set on producer")
 		}
 
 		// Create test eventCh where producer gets actual message

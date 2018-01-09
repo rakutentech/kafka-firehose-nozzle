@@ -47,6 +47,19 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	producerConfig.ChannelBufferSize = DefaultChannelBufferSize
 
+	switch config.Kafka.Compression {
+	case "gzip":
+		producerConfig.Producer.Compression = sarama.CompressionGZIP
+	case "snappy":
+		producerConfig.Producer.Compression = sarama.CompressionSnappy
+	case "none":
+		break
+	case "":
+		break
+	default:
+		return nil, fmt.Errorf("unknown compression codec: %s", config.Kafka.Compression)
+	}
+
 	brokers := config.Kafka.Brokers
 	if len(brokers) < 1 {
 		return nil, fmt.Errorf("brokers are not provided")
@@ -67,6 +80,7 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	return &KafkaProducer{
 		AsyncProducer:           asyncProducer,
+		config:                  producerConfig,
 		Logger:                  logger,
 		Stats:                   stats,
 		logMessageTopic:         config.Kafka.Topic.LogMessage,
@@ -87,6 +101,8 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	config *sarama.Config
 
 	repartitionMax int
 	errors         chan *sarama.ProducerError

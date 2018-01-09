@@ -35,6 +35,8 @@ brokers = ["192.168.1.1:9092","192.168.1.2:9092","192.168.1.3:9092"]
 retry_max = 10
 retry_backoff_ms = 500
 
+# Message compression
+compression = "none" # or "snappy", "gzip"
 
   # Topic kafka topic rule
   # Each events are sent to the each topic on kafka
