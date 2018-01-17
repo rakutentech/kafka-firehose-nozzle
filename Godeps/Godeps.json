@@ -10,8 +10,8 @@
 		},
 		{
 			"ImportPath": "github.com/Shopify/sarama",
-			"Comment": "v1.8.0-27-g68920ff",
-			"Rev": "68920ff1be3bbd31449ab1e2c255c50cedeb755c"
+			"Comment": "v1.15.0-19-gf933fb4",
+			"Rev": "f933fb4b0b80ff5518a04dd6764182f39e8163c1"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/uaago",
@@ -99,6 +99,24 @@
 			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
 			"Comment": "v2.0.0-16-ga1d4a94",
 			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
+		},
+		{
+			"ImportPath": "github.com/eapache/go-xerial-snappy",
+			"Rev": "bb955e01b9346ac19dc29eb16586c90ded99a98c"
+		},
+		{
+			"ImportPath": "github.com/pierrec/lz4",
+			"Comment": "v1.1",
+			"Rev": "2fcda4cb7018ce05a25959d2fe08c83e3329f169"
+		},
+		{
+			"ImportPath": "github.com/rcrowley/go-metrics",
+			"Rev": "e181e095bae94582363434144c61a9653aff6e50"
+		},
+		{
+			"ImportPath": "github.com/pierrec/xxHash/xxHash32",
+			"Comment": "v0.1-11-ga0006b1",
+			"Rev": "a0006b13c722f7f12368c00a3d3c2ae8a999a0c6"
 		}
 	]
 }
