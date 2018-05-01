@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/rakutentech/kafka-firehose-nozzle",
-	"GoVersion": "go1.8",
+	"GoVersion": "go1.9",
 	"GodepVersion": "v79",
 	"Deps": [
 		{
@@ -34,7 +34,7 @@
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry/sonde-go/events",
-			"Rev": "5f5bca3bcb61dbf9371b8db82497c6396cc0ea9b"
+			"Rev": "c48c4f0332609a0e402af4ae31595204c9f7b363"
 		},
 		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
@@ -99,6 +99,22 @@
 			"ImportPath": "github.com/cloudfoundry/noaa/consumer/internal",
 			"Comment": "v2.0.0-16-ga1d4a94",
 			"Rev": "a1d4a94e2be6711111893c59538976d07ef7ea98"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson",
+			"Rev": "4aed678bdbace17a560b5140192df41812d83836"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jlexer",
+			"Rev": "4aed678bdbace17a560b5140192df41812d83836"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/jwriter",
+			"Rev": "4aed678bdbace17a560b5140192df41812d83836"
+		},
+		{
+			"ImportPath": "github.com/mailru/easyjson/buffer",
+			"Rev": "4aed678bdbace17a560b5140192df41812d83836"
 		},
 		{
 			"ImportPath": "github.com/eapache/go-xerial-snappy",
