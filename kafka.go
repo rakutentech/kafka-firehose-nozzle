@@ -1,7 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -27,6 +30,43 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 	// TODO (tcnksm): Enable to configure more properties.
 	producerConfig := sarama.NewConfig()
 
+	if config.Kafka.EnableTLS {
+		if config.Kafka.ClientCert == "" {
+			return nil, errors.New("please specify client_certificate")
+		}
+		if config.Kafka.ClientKey == "" {
+			return nil, errors.New("please specify private_key")
+		}
+
+		producerConfig.Net.TLS.Enable = true
+		if producerConfig.Net.TLS.Config == nil {
+			producerConfig.Net.TLS.Config = &tls.Config{}
+		}
+
+		if len(config.Kafka.CACerts) == 0 {
+			var err error
+			producerConfig.Net.TLS.Config.RootCAs, err = x509.SystemCertPool()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			producerConfig.Net.TLS.Config.RootCAs = x509.NewCertPool()
+			for _, certString := range config.Kafka.CACerts {
+				if !producerConfig.Net.TLS.Config.RootCAs.AppendCertsFromPEM([]byte(certString)) {
+					return nil, errors.New("no certs in ca pem")
+				}
+			}
+		}
+
+		cert, err := tls.X509KeyPair([]byte(config.Kafka.ClientCert), []byte(config.Kafka.ClientKey))
+		if err != nil {
+			return nil, err
+		}
+
+		producerConfig.Net.TLS.Config.Certificates = []tls.Certificate{cert}
+		producerConfig.Net.TLS.Config.BuildNameToCertificate()
+	}
+
 	producerConfig.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 	producerConfig.Producer.Return.Successes = true
 	producerConfig.Producer.RequiredAcks = sarama.WaitForAll
@@ -46,6 +86,19 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 	}
 
 	producerConfig.ChannelBufferSize = DefaultChannelBufferSize
+
+	switch config.Kafka.Compression {
+	case "gzip":
+		producerConfig.Producer.Compression = sarama.CompressionGZIP
+	case "snappy":
+		producerConfig.Producer.Compression = sarama.CompressionSnappy
+	case "none":
+		break
+	case "":
+		break
+	default:
+		return nil, fmt.Errorf("unknown compression codec: %s", config.Kafka.Compression)
+	}
 
 	brokers := config.Kafka.Brokers
 	if len(brokers) < 1 {
@@ -67,6 +120,7 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 
 	return &KafkaProducer{
 		AsyncProducer:           asyncProducer,
+		config:                  producerConfig,
 		Logger:                  logger,
 		Stats:                   stats,
 		logMessageTopic:         config.Kafka.Topic.LogMessage,
@@ -87,6 +141,8 @@ func NewKafkaProducer(logger *log.Logger, stats *Stats, config *Config) (NozzleP
 // KafkaProducer implements NozzleProducer interfaces
 type KafkaProducer struct {
 	sarama.AsyncProducer
+
+	config *sarama.Config
 
 	repartitionMax int
 	errors         chan *sarama.ProducerError

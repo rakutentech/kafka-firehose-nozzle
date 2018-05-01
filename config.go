@@ -43,6 +43,28 @@ type Kafka struct {
 	RetryMax       int `toml:"retry_max"`
 	RetryBackoff   int `toml:"retry_backoff_ms"`
 	RepartitionMax int `toml:"repartition_max"`
+
+	Compression string `toml:"compression"` // ("gzip", "snappy" or "none", default: "none")
+
+	// EnableTLS, if set, will connect to Kafka with TLS instead of plaintext.
+	EnableTLS bool `toml:"enable_tls"`
+
+	// CACerts is a list of CAs certificates used to verify the host.
+	// Usually there is only one, however multiple can be specified to allow
+	// for rotation. These should be PEM encoded CERTIFICATEs.
+	// If none are specified, then the system CA pool is used.
+	// Ignored unless enable_tls is set.
+	CACerts []string `toml:"ca_certificates"`
+
+	// ClientKey is used with the client certificate to identify this client
+	// to Kafka. This should be a PEM encoded RSA PRIVATE KEY.
+	// Ignored unless enable_tls is set.
+	ClientKey string `toml:"private_key"`
+
+	// ClientCertificate is used with the client key to identify this client
+	// to Kafka. This should be a PEM encoded CERTIFICATE.
+	// Ignored unless enable_tls is set.
+	ClientCert string `toml:"certificate"`
 }
 
 type Topic struct {
