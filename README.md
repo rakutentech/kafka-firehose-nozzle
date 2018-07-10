@@ -8,6 +8,8 @@ You can set Kafka topic for each event type (e.g., by default, `LogMessage` even
 
 `kafka-firehose-nozzle` is written in Go and uses the [rakutentech/go-nozzle](https://github.com/rakutentech/go-nozzle) package.
 
+It can be used together with [rakutentech/cf-metrics-refinery](https://github.com/rakutentech/cf-metrics-refinery) to build a reliable pipeline that allows users to monitor their applications via a InfluxDB/Grafana installation.
+
 ## Usage
 
 Basic usage is,
